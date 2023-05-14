@@ -1,4 +1,4 @@
-# rfc9162
+# RFC9162
 
 [![CI](https://github.com/transmute-industries/rfc9162/actions/workflows/ci.yml/badge.svg)](https://github.com/transmute-industries/rfc9162/actions/workflows/ci.yml)
 ![Branches](./badges/coverage-branches.svg)
