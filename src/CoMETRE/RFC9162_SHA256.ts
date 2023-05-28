@@ -52,6 +52,7 @@ const tree_alg = 'RFC9162_SHA256'
 export const RFC9162_SHA256 = {
   tree_alg,
   root,
+  leaf: getLeafFromEntry,
   inclusion_proof: iproof,
   verify_inclusion_proof: viproof,
   consistency_proof: cproof,
