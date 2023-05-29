@@ -10,7 +10,7 @@ export const getRootFromInclusionProof = (
 ) => {
   const { tree_size, leaf_index, inclusion_path } = proof
   if (leaf_index > tree_size) {
-    return false
+    throw new Error('leaf index is out of bound')
   }
   let fn = leaf_index
   let sn = tree_size - 1
@@ -19,7 +19,7 @@ export const getRootFromInclusionProof = (
   for (const p of inclusion_path) {
     // a.  If sn is 0, then stop the iteration and fail the proof verification.
     if (sn === 0) {
-      return false
+      throw new Error('verification failed, sn is 0')
     }
     // b.  If LSB(fn) is set, or if fn is equal to sn, then:
     if (fn % 2 === 1 || fn === sn) {
