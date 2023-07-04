@@ -30,11 +30,12 @@ export const verifyInclusionProof = (
       r = HASH(CONCAT(prefix, CONCAT(p, r)))
       // ii.  If LSB(fn) is not set, then right-shift both fn and sn
       // equally until either LSB(fn) is set or fn is 0.
-      if (fn % 2 !== 1) {
-        do {
-          fn = fn >> 1
-          sn = sn >> 1
-        } while (fn % 2 !== 1 || fn !== 0)
+      while (fn % 2 !== 1) {
+        fn = fn >> 1
+        sn = sn >> 1
+        if (fn === 0) {
+          break
+        }
       }
       // Otherwise:
     } else {
