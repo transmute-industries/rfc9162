@@ -9,13 +9,13 @@ export type ConsistencyProofDataV2 = {
   consistency_path: Uint8Array[]
 }
 
-export const consistencyProof = (
+export const consistencyProof = async (
   previousInclusionProof: InclusionProofDataV2,
   currentEntries: Uint8Array[],
-): ConsistencyProofDataV2 => {
+): Promise<ConsistencyProofDataV2> => {
   const tree_size_1 = previousInclusionProof.tree_size
   const tree_size_2 = currentEntries.length
-  const consistency_path = PROOF(
+  const consistency_path = await PROOF(
     previousInclusionProof.tree_size,
     currentEntries,
   )

@@ -9,7 +9,7 @@ export type InclusionProofDataV2 = {
   inclusion_path: Uint8Array[]
 }
 
-export const inclusionProof = (entry: Uint8Array, entries: Uint8Array[]): InclusionProofDataV2  => {
+export const inclusionProof = async (entry: Uint8Array, entries: Uint8Array[]): Promise<InclusionProofDataV2> => {
   const m = entries.findIndex((value) => {
     return EQUAL(value, entry)
   })
@@ -20,6 +20,6 @@ export const inclusionProof = (entry: Uint8Array, entries: Uint8Array[]): Inclus
     log_id: '',
     tree_size: entries.length,
     leaf_index: m,
-    inclusion_path: PATH(m, entries),
+    inclusion_path: await PATH(m, entries),
   }
 }

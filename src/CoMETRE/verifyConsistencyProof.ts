@@ -9,13 +9,13 @@ const prefix = hexToBin('01')
 import { EXACT_POWER_OF_2 } from '../RFC9162/EXACT_POWER_OF_2'
 import { CoMETREConsistencyProof } from './getConsistencyProofFromLeaves'
 
-export const verifyConsistencyProof = (
+export const verifyConsistencyProof = async (
   first_tree_root: Uint8Array,
   first_tree_size: number,
   second_tree_root: Uint8Array,
   second_tree_size: number,
   proof: CoMETREConsistencyProof, // for first_tree
-) => {
+): Promise<boolean> => {
   const { consistency_path } = proof
   // 1.  If consistency_path is an empty array, stop and fail the proof verification.
   if (consistency_path.length === 0) {
@@ -47,9 +47,9 @@ export const verifyConsistencyProof = (
     // If LSB(fn) is set, or if fn is equal to sn, then:
     if (LSB(fn) || fn === sn) {
       // i.    Set fr to HASH(0x01 || c || fr).
-      fr = HASH(CONCAT(prefix, CONCAT(c, fr)))
+      fr = await HASH(CONCAT(prefix, CONCAT(c, fr)))
       // ii.   Set sr to HASH(0x01 || c || sr).
-      sr = HASH(CONCAT(prefix, CONCAT(c, sr)))
+      sr = await HASH(CONCAT(prefix, CONCAT(c, sr)))
       // iii.  If LSB(fn) is not set, then right-shift both fn and sn
       //            equally until either LSB(fn) is set or fn is 0.
       while (!LSB(fn) && fn !== 0) {
@@ -59,7 +59,7 @@ export const verifyConsistencyProof = (
     } else {
       // Otherwise:
       // i.  Set sr to HASH(0x01 || sr || c).
-      sr = HASH(CONCAT(prefix, CONCAT(sr, c)))
+      sr = await HASH(CONCAT(prefix, CONCAT(sr, c)))
     }
     fn = fn >> 1
     sn = sn >> 1

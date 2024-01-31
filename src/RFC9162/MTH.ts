@@ -11,7 +11,7 @@ import { CUT } from './CUT'
 
 const EMPTY_STRING = strToBin('')
 
-export const MTH = (entries: Uint8Array[]): Uint8Array => {
+export const MTH = async (entries: Uint8Array[]): Promise<Uint8Array> => {
   const n = entries.length
   if (n === 0) {
     return HASH(EMPTY_STRING)
@@ -25,5 +25,5 @@ export const MTH = (entries: Uint8Array[]): Uint8Array => {
   const left = CUT(entries, 0, k)
   const right = CUT(entries, k, n)
   const prefix = hexToBin('01')
-  return HASH(CONCAT(prefix, CONCAT(MTH(left), MTH(right))))
+  return HASH(CONCAT(prefix, CONCAT(await MTH(left), await MTH(right))))
 }

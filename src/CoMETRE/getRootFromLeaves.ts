@@ -6,7 +6,7 @@ import { highestPowerOf2LessThanN } from '../RFC9162/highestPowerOf2LessThanN'
 import { CUT } from '../RFC9162/CUT'
 const EMPTY_STRING = strToBin('')
 
-export const getRootFromLeaves = (leaves: Uint8Array[]): Uint8Array => {
+export const getRootFromLeaves = async (leaves: Uint8Array[]): Promise<Uint8Array> => {
   const n = leaves.length
   if (n === 0) {
     return HASH(EMPTY_STRING)
@@ -19,6 +19,6 @@ export const getRootFromLeaves = (leaves: Uint8Array[]): Uint8Array => {
   const right = CUT(leaves, k, n)
   const prefix = hexToBin('01')
   return HASH(
-    CONCAT(prefix, CONCAT(getRootFromLeaves(left), getRootFromLeaves(right))),
+    CONCAT(prefix, CONCAT(await getRootFromLeaves(left), await getRootFromLeaves(right))),
   )
 }
