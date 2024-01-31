@@ -42,12 +42,12 @@ export const verifyTree = async (
     const merge_count = getMergeCount(i)
     // console.log({merge_count})
     for (let k = 0; k < merge_count; k++) {
-      MERGE(stack)
+      await MERGE(stack)
     }
   }
 
   while (stack.length > 1) {
-    MERGE(stack)
+    await MERGE(stack)
   }
   const computedRoot = stack[0]
   const expectedRoot = root
