@@ -45,25 +45,36 @@ D[6] = [d0, d1, d2, d3, d4, d5]
 //  | |     | |    | |
 // d0 d1   d2 d3  d4 d5
 
-// The inclusion proof for d0 is [b, h, l].
-const prove_d0_in_hash = inclusionProof(d0, D[7])
 
-// The inclusion proof for d2 is [d, g, l].
-const prove_d2_in_hash = inclusionProof(d2, D[7])
+let prove_d0_in_hash: any;
+let prove_d2_in_hash: any;
+let prove_d3_in_hash: any;
+let prove_d4_in_hash: any;
+let prove_d6_in_hash: any;
 
-// The inclusion proof for d3 is [c, g, l].
-const prove_d3_in_hash = inclusionProof(d3, D[7])
+beforeAll(async () => {
+  // The inclusion proof for d0 is [b, h, l].
+  prove_d0_in_hash = await inclusionProof(d0, D[7])
 
-// The inclusion proof for d4 is [f, j, k].
-const prove_d4_in_hash = inclusionProof(d4, D[7])
+  // The inclusion proof for d2 is [d, g, l].
+  prove_d2_in_hash = await inclusionProof(d2, D[7])
 
-// The inclusion proof for d6 is [i, k].
-const prove_d6_in_hash = inclusionProof(d6, D[7])
+  // The inclusion proof for d3 is [c, g, l].
+  prove_d3_in_hash = await inclusionProof(d3, D[7])
+
+  // The inclusion proof for d4 is [f, j, k].
+  prove_d4_in_hash = await inclusionProof(d4, D[7])
+
+  // The inclusion proof for d6 is [i, k].
+  prove_d6_in_hash = await inclusionProof(d6, D[7])
+})
+
+
 
 describe('consistencyProof', () => {
   let hash: Uint8Array
 
-  beforeAll(() => {
+  beforeAll(async () => {
     //             hash
     //            /    \
     //           /      \
@@ -79,7 +90,7 @@ describe('consistencyProof', () => {
     //  a b     c d    e f     d6
     //  | |     | |    | |
     // d0 d1   d2 d3  d4 d5
-    hash = treeHead(D[7])
+    hash = await treeHead(D[7])
   })
 
   it('hash0', async () => {
@@ -93,17 +104,17 @@ describe('consistencyProof', () => {
     //  | |
     // d0 d1
 
-    const hash0 = treeHead(D[3])
-    const prove_d0_in_hash0 = inclusionProof(d0, D[3])
+    const hash0 = await treeHead(D[3])
+    const prove_d0_in_hash0 = await inclusionProof(d0, D[3])
 
-    const verified = verifyInclusionProof(hash0, leaf(d0), prove_d0_in_hash0)
+    const verified = await verifyInclusionProof(hash0, await leaf(d0), prove_d0_in_hash0)
     expect(verified).toBe(true)
 
     // The consistency proof between hash0 and hash is PROOF(3, D[7]) = [c, d, g, l].
-    const consistency_proof_v2 = consistencyProof(prove_d0_in_hash0, D[7])
+    const consistency_proof_v2 = await consistencyProof(prove_d0_in_hash0, D[7])
     const [c, d, g, l] = consistency_proof_v2.consistency_path.map(binToHex)
 
-    const verifiedConsistency = verifyConsistencyProof(
+    const verifiedConsistency = await verifyConsistencyProof(
       hash0,
       hash,
       consistency_proof_v2,
@@ -118,9 +129,9 @@ describe('consistencyProof', () => {
     expect(d).toBe(binToHex(prove_d2_in_hash?.inclusion_path[0]))
     expect(l).toBe(binToHex(prove_d3_in_hash?.inclusion_path[2]))
 
-    const verified_prove_d0_in_hash = verifyInclusionProof(
+    const verified_prove_d0_in_hash = await verifyInclusionProof(
       hash,
-      leaf(d0),
+      await leaf(d0),
       prove_d0_in_hash,
     )
     expect(verified_prove_d0_in_hash).toBe(true)
@@ -136,16 +147,16 @@ describe('consistencyProof', () => {
     //  a b     c d
     //  | |     | |
     // d0 d1   d2 d3
-    const hash1 = treeHead(D[4])
-    const prove_d0_in_hash1 = inclusionProof(d0, D[4])
+    const hash1 = await treeHead(D[4])
+    const prove_d0_in_hash1 = await inclusionProof(d0, D[4])
     // errata.... should be [k, l]
     // The consistency proof between hash1 and hash is PROOF(4, D[7]) = [l].
     // hash can be verified using hash1=k and l.
-    const consistency_proof_v2 = consistencyProof(prove_d0_in_hash1, D[7])
+    const consistency_proof_v2 = await consistencyProof(prove_d0_in_hash1, D[7])
     const [k, l] = consistency_proof_v2.consistency_path.map(binToHex)
     expect(k).toBe(binToHex(hash1))
     expect(l).toBe(binToHex(prove_d3_in_hash.inclusion_path[2]))
-    const verifiedConsistency = verifyConsistencyProof(
+    const verifiedConsistency = await verifyConsistencyProof(
       hash1,
       hash,
       consistency_proof_v2,
@@ -169,9 +180,9 @@ describe('consistencyProof', () => {
     // a  b    c  d
     // |  |    |  |
     // d0 d1   d2 d3
-    const hash2 = treeHead(D[6])
-    const prove_d0_in_hash2 = inclusionProof(d0, D[6])
-    const consistency_proof_v2 = consistencyProof(prove_d0_in_hash2, D[7])
+    const hash2 = await treeHead(D[6])
+    const prove_d0_in_hash2 = await inclusionProof(d0, D[6])
+    const consistency_proof_v2 = await consistencyProof(prove_d0_in_hash2, D[7])
     // The consistency proof between hash2 and hash is PROOF(6, D[7]) = [i, j, k].
     const [i, j, k] = consistency_proof_v2.consistency_path.map(binToHex)
     // Non-leaf nodes k, i are used to verify hash2,
@@ -179,7 +190,7 @@ describe('consistencyProof', () => {
     expect(k).toBe(binToHex(prove_d6_in_hash?.inclusion_path[1]))
     // and non-leaf node j is additionally used to show hash is consistent with hash2.
     expect(j).toBe(binToHex(prove_d4_in_hash?.inclusion_path[1]))
-    const verifiedConsistency = verifyConsistencyProof(
+    const verifiedConsistency = await verifyConsistencyProof(
       hash2,
       hash,
       consistency_proof_v2,
