@@ -5,7 +5,7 @@ const { strToBin, binToHex, inclusionProof } = api
 describe('inclusionProof', () => {
   it('1', async () => {
     const entries = [strToBin('A')]
-    const proof = inclusionProof(entries[0], entries)
+    const proof = await inclusionProof(entries[0], entries)
     expect(proof?.leaf_index).toBe(0)
     expect(proof?.tree_size).toBe(1)
     expect(proof?.inclusion_path).toEqual([])
@@ -13,7 +13,7 @@ describe('inclusionProof', () => {
 
   it('2', async () => {
     const entries = [strToBin('A'), strToBin('B')]
-    const proof = inclusionProof(entries[0], entries)
+    const proof = await inclusionProof(entries[0], entries)
     expect(proof?.leaf_index).toBe(0)
     expect(proof?.tree_size).toBe(2)
     expect(proof?.inclusion_path.map(binToHex)).toEqual([
@@ -23,7 +23,7 @@ describe('inclusionProof', () => {
 
   it('3', async () => {
     const entries = [strToBin('A'), strToBin('B'), strToBin('C')]
-    const proof = inclusionProof(entries[0], entries)
+    const proof = await inclusionProof(entries[0], entries)
     expect(proof?.leaf_index).toBe(0)
     expect(proof?.tree_size).toBe(3)
     expect(proof?.inclusion_path.map(binToHex)).toEqual([

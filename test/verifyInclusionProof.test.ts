@@ -6,36 +6,36 @@ describe('inclusionProof', () => {
   it('1', async () => {
     expect.assertions(1)
     const entries = [strToBin('A')]
-    const root = treeHead(entries)
-    const proof = inclusionProof(entries[0], entries)
-    const verified = verifyInclusionProof(root, leaf(entries[0]), proof)
+    const root = await treeHead(entries)
+    const proof = await inclusionProof(entries[0], entries)
+    const verified = await verifyInclusionProof(root, await leaf(entries[0]), proof)
     expect(verified).toBe(true)
   })
 
   it('2', async () => {
     expect.assertions(1)
     const entries = [strToBin('A'), strToBin('B')]
-    const root = treeHead(entries)
-    const proof = inclusionProof(entries[1], entries)
-    const verified = verifyInclusionProof(root, leaf(entries[1]), proof)
+    const root = await treeHead(entries)
+    const proof = await inclusionProof(entries[1], entries)
+    const verified = await verifyInclusionProof(root, await leaf(entries[1]), proof)
     expect(verified).toBe(true)
   })
 
   it('3', async () => {
     expect.assertions(1)
     const entries = [strToBin('A'), strToBin('B'), strToBin('C')]
-    const root = treeHead(entries)
-    const proof = inclusionProof(entries[1], entries)
-    const verified = verifyInclusionProof(root, leaf(entries[1]), proof)
+    const root = await treeHead(entries)
+    const proof = await inclusionProof(entries[1], entries)
+    const verified = await verifyInclusionProof(root, await leaf(entries[1]), proof)
     expect(verified).toBe(true)
   })
 
   it('4', async () => {
     expect.assertions(1)
     const entries = [strToBin('A'), strToBin('B'), strToBin('C'), strToBin('D')]
-    const root = treeHead(entries)
-    const proof = inclusionProof(entries[1], entries)
-    const verified = verifyInclusionProof(root, leaf(entries[1]), proof)
+    const root = await treeHead(entries)
+    const proof = await inclusionProof(entries[1], entries)
+    const verified = await verifyInclusionProof(root, await leaf(entries[1]), proof)
     expect(verified).toBe(true)
   })
 
@@ -48,9 +48,9 @@ describe('inclusionProof', () => {
       strToBin('D'),
       strToBin('E'),
     ]
-    const root = treeHead(entries)
-    const proof = inclusionProof(entries[1], entries)
-    const verified = verifyInclusionProof(root, leaf(entries[1]), proof)
+    const root = await treeHead(entries)
+    const proof = await inclusionProof(entries[1], entries)
+    const verified = await verifyInclusionProof(root, await leaf(entries[1]), proof)
     expect(verified).toBe(true)
   })
 
@@ -64,9 +64,9 @@ describe('inclusionProof', () => {
       strToBin('E'),
       strToBin('F'),
     ]
-    const root = treeHead(entries)
-    const proof = inclusionProof(entries[1], entries)
-    const verified = verifyInclusionProof(root, leaf(entries[1]), proof)
+    const root = await treeHead(entries)
+    const proof = await inclusionProof(entries[1], entries)
+    const verified = await verifyInclusionProof(root, await leaf(entries[1]), proof)
     expect(verified).toBe(true)
   })
 
@@ -81,9 +81,9 @@ describe('inclusionProof', () => {
       strToBin('F'),
       strToBin('G'),
     ]
-    const root = treeHead(entries)
-    const proof = inclusionProof(entries[1], entries)
-    const verified = verifyInclusionProof(root, leaf(entries[1]), proof)
+    const root = await treeHead(entries)
+    const proof = await inclusionProof(entries[1], entries)
+    const verified = await verifyInclusionProof(root, await leaf(entries[1]), proof)
     expect(verified).toBe(true)
   })
 
@@ -99,9 +99,9 @@ describe('inclusionProof', () => {
       strToBin('G'),
       strToBin('H'),
     ]
-    const root = treeHead(entries)
-    const proof = inclusionProof(entries[1], entries)
-    const verified = verifyInclusionProof(root, leaf(entries[1]), proof)
+    const root = await treeHead(entries)
+    const proof = await inclusionProof(entries[1], entries)
+    const verified = await verifyInclusionProof(root, await leaf(entries[1]), proof)
     expect(verified).toBe(true)
   })
   it('9', async () => {
@@ -117,9 +117,9 @@ describe('inclusionProof', () => {
       strToBin('H'),
       strToBin('I'),
     ]
-    const root = treeHead(entries)
-    const proof = inclusionProof(entries[1], entries)
-    const verified = verifyInclusionProof(root, leaf(entries[1]), proof)
+    const root = await treeHead(entries)
+    const proof = await inclusionProof(entries[1], entries)
+    const verified = await verifyInclusionProof(root, await leaf(entries[1]), proof)
     expect(verified).toBe(true)
   })
 })
