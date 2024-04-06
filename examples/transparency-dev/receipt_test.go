@@ -192,6 +192,7 @@ func TestInclusion(t *testing.T) {
 }
 
 type ReceiptTestCase struct {
+	Leaf  uint64   `json:"leaf"`
 	Size  uint64   `json:"size"`
 	Root  []byte   `json:"root"`
 	Proof [][]byte `json:"proof"`
@@ -229,6 +230,9 @@ func TestSbom(t *testing.T) {
 	}
 	index1 := fileToCheckIndex
 	hash1 := th.HashLeaf(fileToCheck)
+	if hex.EncodeToString(hash1) != "741fe362e81bc7db27210ac4caa91e7afec412fac206ecf735488cce475b1c78" {
+		t.Error("file hash has changed")
+	}
 	root1 := tree.Hash()
 	size1 := tree.Size()
 	proof1, _ := tree.InclusionProof(fileToCheckIndex, size1)
@@ -236,7 +240,7 @@ func TestSbom(t *testing.T) {
 	if inclusionProofError != nil {
 		t.Error(inclusionProofError)
 	}
-	example := &ReceiptTestCase{Size: size1, Root: root1, Proof: proof1}
+	example := &ReceiptTestCase{Leaf: fileToCheckIndex, Size: size1, Root: root1, Proof: proof1}
 	b, err := json.Marshal(example)
 	if err != nil {
 		t.Error(err)
