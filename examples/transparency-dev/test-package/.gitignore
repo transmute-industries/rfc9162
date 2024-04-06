@@ -1,3 +1,5 @@
 
 # For the sake of testing
 !node_modules
+
+!node_modules/jose/dist
