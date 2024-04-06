@@ -2,6 +2,10 @@ package proof
 
 import (
 	"encoding/hex"
+	"encoding/json"
+	"log"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/transparency-dev/merkle"
@@ -184,5 +188,63 @@ func TestInclusion(t *testing.T) {
 	// 1798faa3eb85affab608a28cf885a24a13af4ec794fe3abec046f21b7a799bec
 	// echo -n 01"$(echo -n 01"$(printf "\x00" | cat -  ./f1.txt | sha256sum)$(printf "\x00" | cat -  ./f2.txt | sha256sum)" | xxd -r -p | sha256sum)$(printf "\x00" | cat -  ./f3.txt | sha256sum)"| xxd -r -p | sha256sum
 	// 3322c85256086aa0e1984dff85eab5f1e11d4b8fbbd6c4510611e3bbab0e132a
+
+}
+
+type ReceiptTestCase struct {
+	Size  uint64   `json:"size"`
+	Root  []byte   `json:"root"`
+	Proof [][]byte `json:"proof"`
+}
+
+func TestSbom(t *testing.T) {
+	th := rfc6962.DefaultHasher
+	entries := [][]byte{}
+	tree := newTree(entries)
+	fileToCheckIndex := uint64(0)
+	filepath.Walk("./test-package",
+		func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if !info.IsDir() {
+				fileData, err := os.ReadFile(path)
+				if err != nil {
+					log.Println(err)
+				}
+				fileHash := th.HashLeaf(fileData)
+				tree.appendImpl(fileHash)
+				if path == "test-package/node_modules/jose/dist/browser/key/generate_secret.js" {
+					// fmt.Println("tree size at ", tree.Size())
+					// tree size at 30
+					fileToCheckIndex = tree.Size() - 1
+				}
+			}
+			return nil
+		})
+
+	fileToCheck, err := os.ReadFile("./test-package/node_modules/jose/dist/browser/key/generate_secret.js")
+	if err != nil {
+		t.Error(err)
+	}
+	index1 := fileToCheckIndex
+	hash1 := th.HashLeaf(fileToCheck)
+	root1 := tree.Hash()
+	size1 := tree.Size()
+	proof1, _ := tree.InclusionProof(fileToCheckIndex, size1)
+	inclusionProofError := proof.VerifyInclusion(th, index1, size1, hash1, proof1, root1)
+	if inclusionProofError != nil {
+		t.Error(inclusionProofError)
+	}
+	example := &ReceiptTestCase{Size: size1, Root: root1, Proof: proof1}
+	b, err := json.Marshal(example)
+	if err != nil {
+		t.Error(err)
+	}
+	fo, err := os.Create("receipt.json")
+	if err != nil {
+		t.Error(err)
+	}
+	fo.Write(b)
 
 }
