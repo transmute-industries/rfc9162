@@ -1,19 +1,12 @@
 
 
 import crypto from 'crypto'
-
 import { Hash, Tree, } from "../src";
-
-import api from '../src'
-
-const {
-  treeHead,
-} = api
+import { treeHead } from '../src/RFC9162';
 
 const th = new Hash((data: Uint8Array) => {
   return new Uint8Array(crypto.createHash('sha256').update(data).digest());
 }, 32)
-
 
 it('generate log entries', async () => {
   const tree = new Tree(th)
