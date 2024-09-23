@@ -5,10 +5,11 @@ import {
   ReadTileData,
   StoredHashes,
   Tile, Path,
-  TileReader,
+  TileReader as TR,
   TileHashReader,
   StoredHashIndex,
-  TreeHash
+  TreeHash,
+  HashReader
 } from "../src";
 
 import { treeHead } from '../src/RFC9162';
@@ -21,24 +22,38 @@ const th = new Hash((data: Uint8Array) => {
 const testH = 2
 const encoder = new TextEncoder();
 
-const writeWhilePruning = (tileName: string, tileData: Uint8Array, tiles: Record<string, Uint8Array>) => {
-  let width = parseInt(tileName.split('.').pop() || '1')
-  while (--width > 0) {
-    const previousTileForWidth = tileName.split('.')[0] + '.' + width
-    delete tiles[previousTileForWidth]
+class HashStorage {
+  constructor(public hashes: Uint8Array[]) { }
+  writeData(index: number, data: Uint8Array,) {
+    const hashes = StoredHashes(index, data, this)
+    this.hashes = [...this.hashes, ...hashes]
   }
-  tiles[tileName] = tileData
+  ReadHashes(indexes: number[]) {
+    return indexes.map((i) => this.hashes[i])
+  }
 }
 
-class TestTileStorage implements TileReader {
+class TileReader implements TR {
   public unsaved = 0
-  constructor(public tiles: Record<string, Uint8Array>) { }
+  public tiles: Record<string, Uint8Array>
+
+  constructor(tiles: Record<string, Uint8Array> = {}, public hashReader: HashReader) {
+    this.tiles = tiles
+    this.hashReader = hashReader
+  }
   Height() { return testH }  // testHeight
+  writeTileData(oldTreeSize: number, newTreeSize: number,) {
+    for (const tile of NewTiles(testH, oldTreeSize, newTreeSize)) {
+      const data = ReadTileData(tile, this.hashReader)
+      this.tiles[Path(tile)] = data
+    }
+  }
   ReadTiles(tiles: Tile[]) {
     const out = [] as any
     for (let i = 0; i < tiles.length; i++) {
       const tile = tiles[i]
       const tileName = Path(tile)
+      // read from cache ...
       const hasTile = this.tiles[tileName]
       out.push(hasTile)
     }
@@ -48,34 +63,45 @@ class TestTileStorage implements TileReader {
   SaveTiles(tiles: Tile[]) {
     // fake persist on client.
     this.unsaved -= tiles.length
+    for (const tile of tiles) {
+      const data = ReadTileData(tile, this.hashReader)
+      this.tiles[Path(tile)] = data
+    }
   }
 }
 
+
 it('simulated interface', async () => {
-  const tree = new Tree(th)
+
+  // for testing compatibility
   const entries: Uint8Array[] = []
-  let storedHashes = [] as any
+
+  // these primitives go in the database
+  const hashes = [] as Uint8Array[]
   const tiles = {} as Record<string, Uint8Array>
-  const storage = {
-    ReadHashes: (indexes: number[]) => {
-      return indexes.map((i) => storedHashes[i])
-    }
-  }
+
+  // these readers and writers talk to the database
+  const hashReader = new HashStorage(hashes)
+  const tileReader = new TileReader(tiles, hashReader)
+
   for (let i = 0; i < 26; i++) {
     const data = encoder.encode(`entry-${i}`)
+
+    // write data
+    hashReader.writeData(i, data)
+
+    // write tiles
+    tileReader.writeTileData(i, i + 1)
+
+    // for testing compatibility
     entries.push(data)
-    const hashes = StoredHashes(i, data, storage)
-    storedHashes = [...storedHashes, ...hashes]
-    for (const tile of NewTiles(testH, i, i + 1)) {
-      const data = ReadTileData(tile, storage)
-      writeWhilePruning(Path(tile), data, tiles)
-    }
+
   }
 
-  const oldTreeEncoded = entries.map((h) => Buffer.from(tree.th.hashLeaf(h)).toString('base64'))
+  const oldTreeEncoded = entries.map((h) => Buffer.from(th.hashLeaf(h)).toString('base64'))
   const root1 = await treeHead(entries)
+  const thr = new TileHashReader(entries.length, root1, tileReader)
 
-  const thr = new TileHashReader(entries.length, root1, new TestTileStorage(tiles))
   const [h0] = thr.ReadHashes([StoredHashIndex(0, 7)])
   expect(Buffer.from(h0).toString('base64')).toEqual(oldTreeEncoded[7])
 
