@@ -18,10 +18,22 @@ const th = new Hash((data: Uint8Array) => {
 }, 32)
 
 
+const testH = 2
+const encoder = new TextEncoder();
+
+const writeWhilePruning = (tileName: string, tileData: Uint8Array, tiles: Record<string, Uint8Array>) => {
+  let width = parseInt(tileName.split('.').pop() || '1')
+  while (--width > 0) {
+    const previousTileForWidth = tileName.split('.')[0] + '.' + width
+    delete tiles[previousTileForWidth]
+  }
+  tiles[tileName] = tileData
+}
+
 class TestTileStorage implements TileReader {
   public unsaved = 0
   constructor(public tiles: Record<string, Uint8Array>) { }
-  Height() { return 2 }  // testHeight
+  Height() { return testH }  // testHeight
   ReadTiles(tiles: Tile[]) {
     const out = [] as any
     for (let i = 0; i < tiles.length; i++) {
@@ -38,9 +50,6 @@ class TestTileStorage implements TileReader {
     this.unsaved -= tiles.length
   }
 }
-
-const encoder = new TextEncoder();
-const testH = 2
 
 it('simulated interface', async () => {
   const tree = new Tree(th)
@@ -59,7 +68,7 @@ it('simulated interface', async () => {
     storedHashes = [...storedHashes, ...hashes]
     for (const tile of NewTiles(testH, i, i + 1)) {
       const data = ReadTileData(tile, storage)
-      tiles[Path(tile)] = data
+      writeWhilePruning(Path(tile), data, tiles)
     }
   }
 
@@ -78,7 +87,6 @@ it('simulated interface', async () => {
   const h2p = await treeHead(entries.slice(0, 4)) // ...mth of first 4 elements of level 0
   expect(Buffer.from(h2).toString('base64')).toEqual(Buffer.from(h2p).toString('base64'))
 
-
   // check heads with tile hash reader
   expect(Buffer.from(TreeHash(5, thr)).toString('base64'))
     .toEqual(Buffer.from(await treeHead(entries.slice(0, 5))).toString('base64'))
@@ -91,4 +99,11 @@ it('simulated interface', async () => {
 
   expect(Buffer.from(TreeHash(26, thr)).toString('base64'))
     .toEqual(Buffer.from(await treeHead(entries.slice(0, 26))).toString('base64'))
+
+  // read all leaves from tiles
+  for (let i = 0; i < entries.length; i++) {
+    const [h] = thr.ReadHashes([StoredHashIndex(0, i)])
+    expect(Buffer.from(h).toString('base64')).toEqual(oldTreeEncoded[i])
+  }
+
 })
