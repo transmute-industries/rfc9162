@@ -90,13 +90,13 @@ it('simulated interface', async () => {
     // write data
     hashReader.writeData(i, data)
 
-    // write tiles
-    tileReader.writeTileData(i, i + 1)
-
     // for testing compatibility
     entries.push(data)
 
   }
+
+  // write tiles at the end
+  tileReader.writeTileData(0, 26)
 
   const oldTreeEncoded = entries.map((h) => Buffer.from(th.hashLeaf(h)).toString('base64'))
   const root1 = await treeHead(entries)

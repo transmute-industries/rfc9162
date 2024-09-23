@@ -464,12 +464,12 @@ export class TileHashReader {
     }
 
     // this slows things down... and should be removed...
-    for (let i = 0; i < tiles.length; i++) {
-      const tile = tiles[i]
-      if (data[i].length !== tile[3] * HashSize) {
-        throw new Error(`TileReader returned bad result slice (%v len=%d, want %d)`)
-      }
-    }
+    // for (let i = 0; i < tiles.length; i++) {
+    //   const tile = tiles[i]
+    //   if (data[i].length !== tile[3] * HashSize) {
+    //     throw new Error(`TileReader returned bad result slice (%v len=%d, want %d)`)
+    //   }
+    // }
 
     // Authenticate the initial tiles against the tree hash.
     // They are arranged so that parents are authenticated before children.

@@ -90,9 +90,9 @@ export class Tree {
 
   getNodes(ids: TNode[]) {
     const hashes = new Array(ids.length)
-    for (let i in ids) {
-      let id = ids[i]
-      let [level, index] = id
+    for (const i in ids) {
+      const id = ids[i]
+      const [level, index] = id
       hashes[i] = this.hashes[level][index]
     }
     return hashes
