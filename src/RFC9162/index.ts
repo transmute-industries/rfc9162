@@ -14,4 +14,5 @@ export * from './verifyInclusionProof'
 export * from './consistencyProof'
 export * from './verifyConsistencyProof'
 
-
+export * from './root_from_inclusion'
+export * from './root_from_consistency'
