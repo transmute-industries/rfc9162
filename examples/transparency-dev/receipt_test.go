@@ -93,6 +93,8 @@ func (t *Tree) HashAt(size uint64) []byte {
 // panic.
 func (t *Tree) InclusionProof(index, size uint64) ([][]byte, error) {
 	nodes, err := proof.Inclusion(index, size)
+
+	// fmt.Println(nodes)
 	if err != nil {
 		return nil, err
 	}
@@ -103,10 +105,12 @@ func (t *Tree) InclusionProof(index, size uint64) ([][]byte, error) {
 // sizes. Requires 0 <= size1 <= size2 <= Size(), otherwise may panic.
 func (t *Tree) ConsistencyProof(size1, size2 uint64) ([][]byte, error) {
 	nodes, err := proof.Consistency(size1, size2)
+
 	if err != nil {
 		return nil, err
 	}
-	return nodes.Rehash(t.getNodes(nodes.IDs), t.hasher.HashChildren)
+	hashes := t.getNodes(nodes.IDs)
+	return nodes.Rehash(hashes, t.hasher.HashChildren)
 }
 
 func (t *Tree) getNodes(ids []compact.NodeID) [][]byte {
@@ -169,6 +173,8 @@ func TestInclusion(t *testing.T) {
 		t.Error("unexpected root for tree of size 2")
 	}
 	p1, _ := tree.InclusionProof(0, 2)
+	// fmt.Println(hex.EncodeToString(p1[0]))
+	// 12250d7a57ba6166c61b0b135fc2c21f096f918b69a42d673d812798d9c5d693
 	err := proof.VerifyInclusion(th, 0, 2, th.HashLeaf([]byte("L123456")), p1, tree.HashAt(2))
 	if err != nil {
 		t.Error(err)
@@ -179,6 +185,7 @@ func TestInclusion(t *testing.T) {
 		t.Error("unexpected root for tree of size 3")
 	}
 	p2, _ := tree.ConsistencyProof(2, 3)
+	// fmt.Println(hex.EncodeToString(p2[0]))
 	err = proof.VerifyConsistency(tree.hasher, 2, 3, p2, tree.HashAt(2), tree.HashAt(3))
 	if err != nil {
 		t.Error(err)
