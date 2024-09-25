@@ -132,6 +132,7 @@ it('synchronous apis', async () => {
   //   hashReader.writeData(i, data)
   // }
 
+
   const hashReader = new SQLHashStorage(db)
 
   const tileReader = new SQLTileReader(hashReader)

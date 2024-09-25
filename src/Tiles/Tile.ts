@@ -56,12 +56,12 @@ export function SplitStoredHashIndex(index: number) {
   return [level, n]
 }
 
-export function TileForIndex(h: number, index: number): [Tile, number, number] {
+export function TileForIndex(h: number, storageID: number): [Tile, number, number] {
   if (h < 0) {
     throw new Error(`TileForIndex: invalid height ${h}`)
   }
   const tileHeight = h
-  let [level, n] = SplitStoredHashIndex(index)
+  let [level, n] = SplitStoredHashIndex(storageID)
   const tileLevel = Math.floor(level / h)
 
   // let t = [tileHeight, tileLevel, tileIndex, tileWidth] as any

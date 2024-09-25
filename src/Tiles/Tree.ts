@@ -1,6 +1,6 @@
 import { Hash, toHex } from "./Hash";
-import { TNode, RangeNodes, Decompose } from "./Node";
-import { Inclusion, Consistency, Rehash, Nodes } from "./Proof";
+import { TNode, RangeNodes } from "./Node";
+import { Inclusion, Consistency, Rehash } from "./Proof";
 
 export const encoder = new TextEncoder()
 
