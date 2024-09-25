@@ -124,7 +124,7 @@ class SQLTileReader implements TileReader {
 
 
 it('synchronous apis', async () => {
-  const db = new sqlite("./test/sqlite/transparency.db");
+  const db = new sqlite("./test/tiles/sqlite/transparency.db");
 
   // for (let i = 0; i < 26; i++) {
   //   const data = encoder.encode(`entry-${i}`)
