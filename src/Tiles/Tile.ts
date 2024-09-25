@@ -41,6 +41,7 @@ export function SplitStoredHashIndex(index: number) {
   }
 
   let x
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     x = indexN + 1 + TrailingZeros64(n + 1)
     // console.log({x, indexN, n1: n+1})
@@ -224,9 +225,6 @@ export function subTreeIndex(lo: number, hi: number, need: number[]) {
   }
   return need
 }
-
-// export type Hash = Uint8Array
-// export type Hashes = Uint8Array[]
 
 export function subTreeHash(lo: number, hi: number, hashes: Uint8Array[]): [Uint8Array, Uint8Array[]] {
   let numTree = 0
