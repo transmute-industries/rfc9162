@@ -13,7 +13,7 @@ import {
   ProveTree,
   StoredHashIndex,
   CheckTree
-} from "../../src";
+} from "../../../src";
 
 const prepare = (db: any) => {
   db.prepare(`
