@@ -10,9 +10,9 @@ import {
   StoredHashIndex,
   TreeHash,
   HashReader
-} from "../src";
+} from "../../src";
 
-import { treeHead } from '../src/RFC9162';
+import { treeHead } from '../../src/RFC9162';
 
 const th = new Hash((data: Uint8Array) => {
   return new Uint8Array(crypto.createHash('sha256').update(data).digest());
@@ -100,6 +100,7 @@ it('simulated interface', async () => {
 
   const oldTreeEncoded = entries.map((h) => Buffer.from(th.hashLeaf(h)).toString('base64'))
   const root1 = await treeHead(entries)
+  // console.log(Buffer.from(root1).toString('base64'))
   const thr = new TileHashReader(entries.length, root1, tileReader)
 
   const [h0] = thr.ReadHashes([StoredHashIndex(0, 7)])

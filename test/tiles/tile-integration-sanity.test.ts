@@ -1,8 +1,8 @@
 
 
 import crypto from 'crypto'
-import { Hash, Tree, } from "../src";
-import { treeHead } from '../src/RFC9162';
+import { Hash, Tree, } from "../../src";
+import { treeHead } from '../../src/RFC9162';
 
 const th = new Hash((data: Uint8Array) => {
   return new Uint8Array(crypto.createHash('sha256').update(data).digest());
