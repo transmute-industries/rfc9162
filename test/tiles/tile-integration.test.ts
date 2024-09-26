@@ -1,7 +1,7 @@
 import crypto from 'crypto'
 import {
   Hash, Tree,
-  NewTiles,
+  new_tiles,
   read_tile_data,
   stored_hashes,
   Tile, tile_to_path,
@@ -49,7 +49,7 @@ class TileReader implements TR {
   }
   height() { return testH }  // testHeight
   writeTileData(oldTreeSize: number, newTreeSize: number,) {
-    for (const tile of NewTiles(testH, oldTreeSize, newTreeSize)) {
+    for (const tile of new_tiles(testH, oldTreeSize, newTreeSize)) {
       const data = read_tile_data(tile, this.hashReader)
       // console.log(tile_to_path(tile), Buffer.from(data).toString('hex'))
       this.tiles[tile_to_path(tile)] = data

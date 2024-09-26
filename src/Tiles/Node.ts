@@ -15,7 +15,7 @@ const countTrailing0 = (n: number) => {
   return count
 }
 
-export function TrailingZeros64(n: number) {
+export function trailing_zeros_64(n: number) {
   return countTrailing0(n)
 }
 
@@ -65,7 +65,7 @@ export function RangeNodes(begin: number, end: number, ids: TNode[]) {
   let pos = begin
   let bit = 0
   while (left !== 0) {
-    const level = TrailingZeros64(left)
+    const level = trailing_zeros_64(left)
     bit = 1 << level
     ids.push([level, pos >> level])
     pos = pos + bit

@@ -1,23 +1,38 @@
 import crypto from 'crypto'
 
-import { TrailingZeros64 } from "./Node";
+import { trailing_zeros_64 } from "./Node";
 
-import { HashSize, Hash, Concat, IntermediatePrefix, toHex } from "./Hash";
+import { HashSize, Hash, concat, IntermediatePrefix, toHex } from "./Hash";
 
-export const PrettyHash = (h: Uint8Array) => {
-  return Buffer.from(h).toString('base64')
+// need to make this a parameter
+const th = new Hash((data: Uint8Array) => {
+  return new Uint8Array(crypto.createHash('sha256').update(data).digest());
+}, 32)
+
+
+export interface HashReader {
+  read_hashes: (indexes: number[]) => Uint8Array[]
 }
 
-export const PrettyHashes = (hs: Uint8Array[]) => {
-  return hs.map(PrettyHash)
+export interface TileReader {
+  height: () => number
+  read_tiles: (tiles: Tile[]) => Uint8Array[]
+  save_tiles: (tiles: Tile[], data: Uint8Array[]) => void
 }
-
-
 
 export type Tile = [number, number, number, number]
 
+
 export function Tile(h: number, l: number, n: number, w: number) {
   return [h, l, n, w] as Tile
+}
+
+export const pretty_hash = (h: Uint8Array) => {
+  return Buffer.from(h).toString('base64')
+}
+
+export const pretty_hashes = (hs: Uint8Array[]) => {
+  return hs.map(pretty_hash)
 }
 
 export function stored_hash_index(level: number, n: number) {
@@ -32,7 +47,7 @@ export function stored_hash_index(level: number, n: number) {
   return i + level
 }
 
-export function SplitStoredHashIndex(index: number) {
+export function split_stored_hash_index(index: number) {
   let n = Math.ceil(index / 2)
   let indexN = stored_hash_index(0, n)
   indexN = Math.ceil(indexN)
@@ -43,7 +58,7 @@ export function SplitStoredHashIndex(index: number) {
   let x
   // eslint-disable-next-line no-constant-condition
   while (true) {
-    x = indexN + 1 + TrailingZeros64(n + 1)
+    x = indexN + 1 + trailing_zeros_64(n + 1)
     // console.log({x, indexN, n1: n+1})
     if (x > index) {
       break
@@ -61,7 +76,7 @@ export function tile_for_storage_id(h: number, storageID: number): [Tile, number
     throw new Error(`tile_for_storage_id: invalid height ${h}`)
   }
   const tile_height = h
-  let [level, n] = SplitStoredHashIndex(storageID)
+  let [level, n] = split_stored_hash_index(storageID)
   const tileLevel = Math.floor(level / h)
 
   // let t = [tile_height, tileLevel, tileIndex, tileWidth] as any
@@ -78,13 +93,8 @@ export function tile_to_path(t: Tile) {
   return `tile/${H}/${L}/${N}.${W}`
 }
 
-
-const th = new Hash((data: Uint8Array) => {
-  return new Uint8Array(crypto.createHash('sha256').update(data).digest());
-}, 32)
-
-function NodeHash(left: Uint8Array, right: Uint8Array) {
-  return th.hash(Concat(IntermediatePrefix, Concat(left, right)))
+function node_hash(left: Uint8Array, right: Uint8Array) {
+  return th.hash(concat(IntermediatePrefix, concat(left, right)))
 }
 
 export function hash_from_tile(t: Tile, data: Uint8Array, storageID: number) {
@@ -101,12 +111,12 @@ export function hash_from_tile(t: Tile, data: Uint8Array, storageID: number) {
     throw new Error(`index ${storageID} is in ${tile_to_path(t1)} not ${tile_to_path(t)}`)
   }
   const slice = data.slice(start, end)
-  return tileHash(slice)
+  return tile_hash(slice)
 }
 
-export function tileHash(data: Uint8Array): Uint8Array {
+export function tile_hash(data: Uint8Array): Uint8Array {
   if (data.length == 0) {
-    throw new Error("bad math in tileHash")
+    throw new Error("bad math in tile_hash")
   }
   if (data.length === HashSize) {
     return data
@@ -114,15 +124,15 @@ export function tileHash(data: Uint8Array): Uint8Array {
   const n = data.length / 2
   const left = data.slice(0, n)
   const right = data.slice(n, data.length)
-  return NodeHash(
-    tileHash(left),
-    tileHash(right)
+  return node_hash(
+    tile_hash(left),
+    tile_hash(right)
   )
 }
 
-export function NewTiles(h: number, oldTreeSize: number, newTreeSize: number) {
+export function new_tiles(h: number, oldTreeSize: number, newTreeSize: number) {
   if (h < 0) {
-    throw new Error(`NewTiles: invalid height ${h}`)
+    throw new Error(`new_tiles: invalid height ${h}`)
   }
   const H = h
   const tiles = [] as Tile[]
@@ -144,9 +154,7 @@ export function NewTiles(h: number, oldTreeSize: number, newTreeSize: number) {
   return tiles
 }
 
-export interface HashReader {
-  read_hashes: (indexes: number[]) => Uint8Array[]
-}
+
 
 export function read_tile_data(t: Tile, r: HashReader) {
   let size = t[3]
@@ -162,7 +170,7 @@ export function read_tile_data(t: Tile, r: HashReader) {
   if (hashes.length != indexes.length) {
     throw new Error(`tlog: read_hashes(${indexes.length} indexes) = ${hashes.length} hashes`)
   }
-  const tileData = hashes.reduce(Concat)
+  const tileData = hashes.reduce(concat)
   return tileData
 }
 
@@ -179,7 +187,7 @@ export function stored_hash_count(n: number) {
 
 export function stored_hashes_for_record_hash(n: number, h: Uint8Array, r: HashReader) {
   const hashes = [h] as Uint8Array[]
-  const m = TrailingZeros64(n + 1)
+  const m = trailing_zeros_64(n + 1)
   const indexes = new Array(m).fill(0)
   for (let i = 0; i < m; i++) {
     const next = (n >> i) - 1
@@ -187,7 +195,7 @@ export function stored_hashes_for_record_hash(n: number, h: Uint8Array, r: HashR
   }
   const old = r.read_hashes(indexes)
   for (let i = 0; i < m; i++) {
-    h = NodeHash(old[m - 1 - i], h)
+    h = node_hash(old[m - 1 - i], h)
     hashes.push(h)
   }
   return hashes
@@ -204,7 +212,7 @@ export function stored_hashes(n: number, data: Uint8Array, r: HashReader) {
 
 
 
-export function maxpow2(n: number) {
+export function max_power_2(n: number) {
   let l = 0
   while ((1 << (l + 1)) < n) {
     l++
@@ -214,11 +222,11 @@ export function maxpow2(n: number) {
 
 
 
-export function subTreeIndex(lo: number, hi: number, need: number[]) {
+export function subtree_index(lo: number, hi: number, need: number[]) {
   while (lo < hi) {
-    const [k, level] = maxpow2(hi - lo + 1)
+    const [k, level] = max_power_2(hi - lo + 1)
     if ((lo & (k - 1)) != 0) {
-      throw new Error(`tlog: bad math in subTreeIndex`)
+      throw new Error(`tlog: bad math in subtree_index`)
     }
     need.push(stored_hash_index(level, lo >> level))
     lo += k
@@ -226,22 +234,22 @@ export function subTreeIndex(lo: number, hi: number, need: number[]) {
   return need
 }
 
-export function subTreeHash(lo: number, hi: number, hashes: Uint8Array[]): [Uint8Array, Uint8Array[]] {
+export function subtree_hash(lo: number, hi: number, hashes: Uint8Array[]): [Uint8Array, Uint8Array[]] {
   let numTree = 0
   while (lo < hi) {
-    const [k, _] = maxpow2(hi - lo + 1)
+    const [k, _] = max_power_2(hi - lo + 1)
     if ((lo & (k - 1)) != 0 || lo >= hi) {
-      throw new Error(`tlog: bad math in subTreeHash`)
+      throw new Error(`tlog: bad math in subtree_hash`)
     }
     numTree++
     lo += k
   }
   if (hashes.length < numTree) {
-    throw new Error(`tlog: bad index math in subTreeHash`)
+    throw new Error(`tlog: bad index math in subtree_hash`)
   }
   let h = hashes[numTree - 1]
   for (let i = numTree - 2; i >= 0; i--) {
-    h = NodeHash(hashes[i], h)
+    h = node_hash(hashes[i], h)
   }
   return [h, hashes.slice(numTree, hashes.length)]
 }
@@ -251,11 +259,10 @@ export function tree_hash(n: number, r: HashReader) {
   if (n === 0) {
     return th.emptyRoot()
   }
-  const indexes = subTreeIndex(0, n, [])
+  const indexes = subtree_index(0, n, [])
   let hashes = r.read_hashes(indexes)
-  let hash
-  const sth = subTreeHash(0, n, hashes)
-  hash = sth[0]
+  const sth = subtree_hash(0, n, hashes)
+  const hash = sth[0]
   hashes = sth[1]
   if (hashes.length !== 0) {
     throw new Error(`tlog: bad index math in tree_hash`)
@@ -263,47 +270,47 @@ export function tree_hash(n: number, r: HashReader) {
   return hash
 }
 
-export function TileBytesAreEqual(tileData1: Uint8Array, tileData2: Uint8Array) {
+export function tile_bytes_are_equal(tileData1: Uint8Array, tileData2: Uint8Array) {
   return toHex(tileData1) === toHex(tileData2)
 }
 
-export function leafProofIndex(lo: number, hi: number, n: number, need: number[]) {
+export function leaf_proof_index(lo: number, hi: number, n: number, need: number[]) {
   if (!(lo <= n && n < hi)) {
-    throw new Error(`tlog: bad math in leafProofIndex`)
+    throw new Error(`tlog: bad math in leaf_proof_index`)
   }
   if ((lo + 1) == hi) {
     return need
   }
-  const [k, _] = maxpow2(hi - lo)
+  const [k, _] = max_power_2(hi - lo)
   if (n < lo + k) {
-    need = leafProofIndex(lo, lo + k, n, need)
-    need = subTreeIndex(lo + k, hi, need)
+    need = leaf_proof_index(lo, lo + k, n, need)
+    need = subtree_index(lo + k, hi, need)
   } else {
 
-    need = subTreeIndex(lo, lo + k, need)
-    need = leafProofIndex(lo + k, hi, n, need)
+    need = subtree_index(lo, lo + k, need)
+    need = leaf_proof_index(lo + k, hi, n, need)
   }
   return need
 }
 
-export function leafProof(lo: number, hi: number, n: number, hashes: Uint8Array[]): [RecordProof, Uint8Array[]] {
+export function leaf_proof(lo: number, hi: number, n: number, hashes: Uint8Array[]): [RecordProof, Uint8Array[]] {
   if (!(lo <= n && n < hi)) {
-    throw new Error(`tlog: bad math in leafProof`)
+    throw new Error(`tlog: bad math in leaf_proof`)
   }
   if (lo + 1 == hi) {
     return [[] as RecordProof, hashes]
   }
   let p: any
   let th: any
-  const [k, _] = maxpow2(hi - lo)
+  const [k, _] = max_power_2(hi - lo)
   if (n < lo + k) {
-    [p, hashes] = leafProof(lo, lo + k, n, hashes)
-    const sth = subTreeHash(lo + k, hi, hashes)
+    [p, hashes] = leaf_proof(lo, lo + k, n, hashes)
+    const sth = subtree_hash(lo + k, hi, hashes)
     th = sth[0]
     hashes = sth[1]
   } else {
-    [th, hashes] = subTreeHash(lo, lo + k, hashes)
-    const lp = leafProof(lo + k, hi, n, hashes)
+    [th, hashes] = subtree_hash(lo, lo + k, hashes)
+    const lp = leaf_proof(lo + k, hi, n, hashes)
     p = lp[0]
     hashes = lp[1]
   }
@@ -317,7 +324,7 @@ export function prove_record(t: number, n: number, r: HashReader) {
   if (t < 0 || n < 0 || n >= t) {
     throw new Error('tlog: invalid inputs in prove_record')
   }
-  const indexes = leafProofIndex(0, t, n, [])
+  const indexes = leaf_proof_index(0, t, n, [])
   if (indexes.length === 0) {
     return [] as RecordProof
   }
@@ -326,16 +333,16 @@ export function prove_record(t: number, n: number, r: HashReader) {
     throw new Error(`tlog: read_hashes(${indexes.length} indexes) = ${hashes.length} hashes`)
   }
   let p;
-  [p, hashes] = leafProof(0, t, n, hashes)
+  [p, hashes] = leaf_proof(0, t, n, hashes)
   if (hashes.length != 0) {
     throw new Error(`tlog: bad index math in prove_record`)
   }
   return p
 }
 
-export function runRecordProof(p: RecordProof, lo: number, hi: number, n: number, leafHash: Uint8Array): Uint8Array {
+export function run_record_proof(p: RecordProof, lo: number, hi: number, n: number, leafHash: Uint8Array): Uint8Array {
   if (!(lo <= n && n < hi)) {
-    throw new Error(`tlog: bad math in runRecordProof`)
+    throw new Error(`tlog: bad math in run_record_proof`)
   }
   if (lo + 1 === hi) {
     if (p.length !== 0) {
@@ -348,13 +355,13 @@ export function runRecordProof(p: RecordProof, lo: number, hi: number, n: number
     throw new Error('errProofFailed')
   }
 
-  const [k, _] = maxpow2(hi - lo)
+  const [k, _] = max_power_2(hi - lo)
   if (n < lo + k) {
-    const nextHash = runRecordProof(p.slice(0, p.length - 1), lo, lo + k, n, leafHash)
-    return NodeHash(nextHash, p[p.length - 1])
+    const nextHash = run_record_proof(p.slice(0, p.length - 1), lo, lo + k, n, leafHash)
+    return node_hash(nextHash, p[p.length - 1])
   } else {
-    const nextHash = runRecordProof(p.slice(0, p.length - 1), lo + k, hi, n, leafHash)
-    return NodeHash(p[p.length - 1], nextHash)
+    const nextHash = run_record_proof(p.slice(0, p.length - 1), lo + k, hi, n, leafHash)
+    return node_hash(p[p.length - 1], nextHash)
   }
 
 }
@@ -363,17 +370,11 @@ export function check_record(p: RecordProof, t: number, th: Uint8Array, n: numbe
   if (t < 0 || n < 0 || n >= t) {
     throw new Error(`tlog: invalid inputs in check_record`)
   }
-  const th2 = runRecordProof(p, 0, t, n, h)
+  const th2 = run_record_proof(p, 0, t, n, h)
   return toHex(th2) === toHex(th)
 }
 
-export interface TileReader {
-  height: () => number
-  read_tiles: (tiles: Tile[]) => Uint8Array[]
-  save_tiles: (tiles: Tile[], data: Uint8Array[]) => void
-}
-
-export function tileParent(t: Tile, k: number, n: number): Tile {
+export function tile_parent(t: Tile, k: number, n: number): Tile {
   let [tH, tL, tN, tW] = [...t]
   tL += k
   tN >>= (k * tH)
@@ -394,12 +395,12 @@ export class TileHashReader {
     const h = this.storage.height()
     const tileOrder = {} as Record<string, number>
     const tiles = [] as Tile[]
-    const stx = subTreeIndex(0, this.size, [])
+    const stx = subtree_index(0, this.size, [])
     const stxTileOrder = new Array(stx.length).fill(0)
     for (let i = 0; i < stx.length; i++) {
       const x = stx[i]
       let [tile] = tile_for_storage_id(h, x)
-      tile = tileParent(tile, 0, this.size)
+      tile = tile_parent(tile, 0, this.size)
       if (tileOrder[tile_to_path(tile)]) {
         stxTileOrder[i] = tileOrder[tile_to_path(tile)]
         continue
@@ -424,7 +425,7 @@ export class TileHashReader {
       const [tile] = tile_for_storage_id(h, x)
       let k = 0;
       for (; ; k++) {
-        const p = tileParent(tile, k, this.size)
+        const p = tile_parent(tile, k, this.size)
         if (tileOrder[tile_to_path(p)] !== undefined) {
           if (k === 0) {
             indexTileOrder[i] = tileOrder[tile_to_path(p)]
@@ -435,12 +436,12 @@ export class TileHashReader {
 
       // Walk back down recording child tiles after parents.
       // This loop ends by revisiting the tile for this index
-      // (tileParent(tile, 0, r.tree.N)) unless k == 0, in which
+      // (tile_parent(tile, 0, r.tree.N)) unless k == 0, in which
       // case the previous loop did it.
 
       for (k--; k >= 0; k--) {
         // console.log("r.tree.N ", this.size)
-        const p = tileParent(tile, k, this.size)
+        const p = tile_parent(tile, k, this.size)
         if (p[3] != (1 << p[0])) {
           // Only full tiles have parents.
           // This tile has a parent, so it must be full.
@@ -476,7 +477,7 @@ export class TileHashReader {
     let th = hash_from_tile(tiles[stxTileOrder[stx.length - 1]], data[stxTileOrder[stx.length - 1]], stx[stx.length - 1])
     for (let i = stx.length - 2; i >= 0; i--) {
       const h = hash_from_tile(tiles[stxTileOrder[i]], data[stxTileOrder[i]], stx[i])
-      th = NodeHash(h, th)
+      th = node_hash(h, th)
     }
     if (toHex(th) != toHex(this.root)) {
       throw new Error(`downloaded inconsistent tile`)
@@ -485,13 +486,13 @@ export class TileHashReader {
     // Authenticate full tiles against their parents.
     for (let i = stx.length; i < tiles.length; i++) {
       const tile = tiles[i]
-      const p = tileParent(tile, 1, this.size)
+      const p = tile_parent(tile, 1, this.size)
       const j = tileOrder[tile_to_path(p)]
       if (j === undefined) {
         throw new Error(`bad math in tileHashReader %d %v: lost parent of %v`)
       }
       const h = hash_from_tile(p, data[j], stored_hash_index(p[1] * p[0], tile[2]))
-      if (toHex(h) != toHex(tileHash(data[i]))) {
+      if (toHex(h) != toHex(tile_hash(data[i]))) {
         throw new Error(`downloaded inconsistent tile 2`)
       }
     }
@@ -509,38 +510,38 @@ export class TileHashReader {
   }
 }
 
-export function treeProofIndex(lo: number, hi: number, n: number, need: number[]) {
+export function tree_proof_index(lo: number, hi: number, n: number, need: number[]) {
   if (!(lo < n && n <= hi)) {
-    throw new Error(`tlog: bad math in treeProofIndex`)
+    throw new Error(`tlog: bad math in tree_proof_index`)
   }
   if (n === hi) {
     if (lo === 0) {
       return need
     }
-    return subTreeIndex(lo, hi, need)
+    return subtree_index(lo, hi, need)
   }
-  const [k, _] = maxpow2(hi - lo)
+  const [k, _] = max_power_2(hi - lo)
   if (n <= lo + k) {
-    need = treeProofIndex(lo, lo + k, n, need)
-    need = subTreeIndex(lo + k, hi, need)
+    need = tree_proof_index(lo, lo + k, n, need)
+    need = subtree_index(lo + k, hi, need)
   } else {
-    need = subTreeIndex(lo, lo + k, need)
-    need = treeProofIndex(lo + k, hi, n, need)
+    need = subtree_index(lo, lo + k, need)
+    need = tree_proof_index(lo + k, hi, n, need)
   }
   return need
 }
 
 
-export function treeProof(lo: number, hi: number, n: number, hashes: Uint8Array[]): [Uint8Array[], Uint8Array[]] {
+export function tree_proof(lo: number, hi: number, n: number, hashes: Uint8Array[]): [Uint8Array[], Uint8Array[]] {
   if (!(lo < n && n <= hi)) {
-    throw new Error(`tlog: bad math in treeProof`)
+    throw new Error(`tlog: bad math in tree_proof`)
   }
   if (n === hi) {
     if (lo == 0) {
       return [[], hashes]
     }
     let th
-    [th, hashes] = subTreeHash(lo, hi, hashes)
+    [th, hashes] = subtree_hash(lo, hi, hashes)
     return [[th], hashes]
   }
 
@@ -548,16 +549,16 @@ export function treeProof(lo: number, hi: number, n: number, hashes: Uint8Array[
   let p
   let th
 
-  const [k, _] = maxpow2(hi - lo)
+  const [k, _] = max_power_2(hi - lo)
   if (n <= lo + k) {
-    [p, hashes] = treeProof(lo, lo + k, n, hashes)
-    const sth: any = subTreeHash(lo + k, hi, hashes) // liekly problem
+    [p, hashes] = tree_proof(lo, lo + k, n, hashes)
+    const sth: any = subtree_hash(lo + k, hi, hashes) // liekly problem
     th = sth[0]
     hashes = sth[1]
 
   } else {
-    [th, hashes] = subTreeHash(lo, lo + k, hashes)
-    const tp = treeProof(lo + k, hi, n, hashes)
+    [th, hashes] = subtree_hash(lo, lo + k, hashes)
+    const tp = tree_proof(lo + k, hi, n, hashes)
     p = tp[0]
     hashes = tp[1]
 
@@ -571,7 +572,7 @@ export function prove_tree(t: number, n: number, h: HashReader) {
   if (t < 1 || n < 1 || n > t) {
     throw new Error(`tlog: invalid inputs in prove_tree`)
   }
-  const indexes = treeProofIndex(0, t, n, [])
+  const indexes = tree_proof_index(0, t, n, [])
   if (indexes.length === 0) {
     return []
   }
@@ -580,16 +581,16 @@ export function prove_tree(t: number, n: number, h: HashReader) {
     throw new Error(`tlog: read_hashes(%d indexes) = %d hashes`)
   }
   let p
-  [p, hashes] = treeProof(0, t, n, hashes)
+  [p, hashes] = tree_proof(0, t, n, hashes)
   if (hashes.length != 0) {
     throw new Error(`tlog: bad index math in prove_tree`)
   }
   return p
 }
 
-export function runTreeProof(p: Uint8Array[], lo: number, hi: number, n: number, old: Uint8Array): [Uint8Array, Uint8Array] {
+export function run_tree_proof(p: Uint8Array[], lo: number, hi: number, n: number, old: Uint8Array): [Uint8Array, Uint8Array] {
   if (!(lo < n && n <= hi)) {
-    throw new Error(`tlog: bad math in runTreeProof`)
+    throw new Error(`tlog: bad math in run_tree_proof`)
   }
   if (n == hi) {
     if (lo == 0) {
@@ -608,13 +609,13 @@ export function runTreeProof(p: Uint8Array[], lo: number, hi: number, n: number,
     throw new Error(`errProofFailed`)
   }
 
-  const [k, _] = maxpow2(hi - lo)
+  const [k, _] = max_power_2(hi - lo)
   if (n <= lo + k) {
-    const [oh, th] = runTreeProof(p.slice(0, p.length - 1), lo, lo + k, n, old)
-    return [oh, NodeHash(th, p[p.length - 1])]
+    const [oh, th] = run_tree_proof(p.slice(0, p.length - 1), lo, lo + k, n, old)
+    return [oh, node_hash(th, p[p.length - 1])]
   } else {
-    const [oh, th] = runTreeProof(p.slice(0, p.length - 1), lo + k, hi, n, old)
-    return [NodeHash(p[p.length - 1], oh), NodeHash(p[p.length - 1], th)]
+    const [oh, th] = run_tree_proof(p.slice(0, p.length - 1), lo + k, hi, n, old)
+    return [node_hash(p[p.length - 1], oh), node_hash(p[p.length - 1], th)]
   }
 
 }
@@ -624,7 +625,7 @@ export function check_tree(p: Uint8Array[], t: number, th: Uint8Array, n: number
     throw new Error(`tlog: invalid inputs in check_tree`)
   }
 
-  const [h2, th2] = runTreeProof(p, 0, t, n, h)
+  const [h2, th2] = run_tree_proof(p, 0, t, n, h)
   if (toHex(th2) == toHex(th) && toHex(h2) == toHex(h)) {
     return true
   }

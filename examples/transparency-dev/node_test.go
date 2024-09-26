@@ -114,7 +114,7 @@ func TestNewNodeID(t *testing.T) {
 	// fmt.Println(bits.Len64(255))
 	// fmt.Println(bits.Len32(256))
 
-	// fmt.Println(bits.TrailingZeros64(uint64(875214)))
+	// fmt.Println(bits.trailing_zeros_64(uint64(875214)))
 	// fmt.Println(compact.RangeNodes(0, 15, []compact.NodeID{}))
 
 	// fmt.Println(bits.OnesCount64(123))

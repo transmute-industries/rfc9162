@@ -1,5 +1,5 @@
 
-import { TNode, Len64, Coverage, RangeSize, Sibling, Parent, RangeNodes, TrailingZeros64, OnesCount64 } from "./Node"
+import { TNode, Len64, Coverage, RangeSize, Sibling, Parent, RangeNodes, trailing_zeros_64, OnesCount64 } from "./Node"
 import { Hash, toHex } from "./Hash"
 
 export type Nodes = {
@@ -148,7 +148,7 @@ export function VerifyConsistency(th: Hash, size1: number, size2: number, proof:
   }
 
   let [inner, border] = DecomposeInclusionProof(size1 - 1, size2)
-  const shift = TrailingZeros64(size1)
+  const shift = trailing_zeros_64(size1)
   inner -= shift
 
   let seed = proof[0]
@@ -192,7 +192,7 @@ export function Consistency(size1: number, size2: number): Nodes {
   if (size1 === size2 && size1 === 0) {
     return { ids: [], begin: 0, end: 0, ephem: [0, 0] }
   }
-  const level = TrailingZeros64(size1)
+  const level = trailing_zeros_64(size1)
   const index = (size1 - 1) >> level
   const p = Nodes(index, level, size2)
   if (index == 0) {

@@ -2,14 +2,14 @@ import crypto from 'crypto'
 import {
   tile_for_storage_id,
   hash_from_tile,
-  Hash, Tree, Concat, toHex,
-  PrettyHash, NewTiles,
-  PrettyHashes,
+  Hash, Tree, concat, toHex,
+  pretty_hash, new_tiles,
+  pretty_hashes,
   read_tile_data, stored_hash_count,
   stored_hashes, stored_hash_index,
   record_hash, tree_hash,
   Tile, tile_to_path, HashSize,
-  TileBytesAreEqual,
+  tile_bytes_are_equal,
   prove_record,
   check_record,
   TileReader,
@@ -36,7 +36,7 @@ describe('hash_from_tile', () => {
     const entry = `entry-${i}`
     tree.appendData(tree.encodeData(entry))
   }
-  const rawData = tree.hashes[0].reduce(Concat)
+  const rawData = tree.hashes[0].reduce(concat)
   it('first hash, from first tile', () => {
     const index = 0
     const [tile] = tile_for_storage_id(2, index)
@@ -99,9 +99,9 @@ describe('hash_from_tile', () => {
 
 
 
-it('NewTiles', () => {
-  expect(NewTiles(2, 0, 1)).toEqual([[2, 0, 0, 1]])
-  expect(NewTiles(2, 1, 2)).toEqual([[2, 0, 0, 2]])
+it('new_tiles', () => {
+  expect(new_tiles(2, 0, 1)).toEqual([[2, 0, 0, 1]])
+  expect(new_tiles(2, 1, 2)).toEqual([[2, 0, 0, 2]])
 })
 
 it('stored_hash_index', () => {
@@ -139,39 +139,39 @@ describe('TestTiledTree', () => {
 
       const th = tree_hash(i + 1, storage)
       if (i == 0) {
-        expect(PrettyHash(th)).toBe("G7l9zCFjXUfiZj79/QoXRobZjdcBNS3SzQbotD/T0wU=")
+        expect(pretty_hash(th)).toBe("G7l9zCFjXUfiZj79/QoXRobZjdcBNS3SzQbotD/T0wU=")
       }
       if (i == 1) {
-        expect(PrettyHash(th)).toBe("/F9riP+FVPdbsvnm85wxsZNtRLaSdu33sSBalVuXYeM=")
+        expect(pretty_hash(th)).toBe("/F9riP+FVPdbsvnm85wxsZNtRLaSdu33sSBalVuXYeM=")
       }
       if (i == 2) {
-        expect(PrettyHash(th)).toBe("1Pksj7uJcg6ztVZ3x9fvrd/rENEaGoSguo8aIzN/qpU=")
+        expect(pretty_hash(th)).toBe("1Pksj7uJcg6ztVZ3x9fvrd/rENEaGoSguo8aIzN/qpU=")
       }
       if (i == 3) {
-        expect(PrettyHash(th)).toBe("T2MQhKFXxU9U/Psj/164ZQxLoWDClbsTqYMrEJ1SZ34=")
+        expect(pretty_hash(th)).toBe("T2MQhKFXxU9U/Psj/164ZQxLoWDClbsTqYMrEJ1SZ34=")
       }
       if (i == 4) {
-        expect(PrettyHash(th)).toBe("NBUVmC1lDiNSDb1U1/zwr6G3DMOhakEdRk3JwayWwwE=")
+        expect(pretty_hash(th)).toBe("NBUVmC1lDiNSDb1U1/zwr6G3DMOhakEdRk3JwayWwwE=")
       }
 
-      for (const tile of NewTiles(testH, i, i + 1)) {
+      for (const tile of new_tiles(testH, i, i + 1)) {
         const data = read_tile_data(tile, storage)
         const old = Tile(tile[0], tile[1], tile[2], tile[3] - 1)
         const oldData = tiles[tile_to_path(old)] || new Uint8Array()
-        if ((oldData.length != (data.length - HashSize)) || !TileBytesAreEqual(oldData, data.slice(0, oldData.length))) {
+        if ((oldData.length != (data.length - HashSize)) || !tile_bytes_are_equal(oldData, data.slice(0, oldData.length))) {
           throw new Error(`tile ${tile} not extending earlier tile ${old}`)
         }
         tiles[tile_to_path(tile)] = data
       }
-      for (const tile of NewTiles(testH, 0, i + 1)) {
+      for (const tile of new_tiles(testH, 0, i + 1)) {
         const data = read_tile_data(tile, storage)
-        if (!TileBytesAreEqual(tiles[tile_to_path(tile)], data)) {
+        if (!tile_bytes_are_equal(tiles[tile_to_path(tile)], data)) {
           throw new Error(`mismatch at ${tile}`)
         }
       }
-      for (const tile of NewTiles(testH, i / 2, i + 1)) {
+      for (const tile of new_tiles(testH, i / 2, i + 1)) {
         const data = read_tile_data(tile, storage)
-        if (!TileBytesAreEqual(tiles[tile_to_path(tile)], data)) {
+        if (!tile_bytes_are_equal(tiles[tile_to_path(tile)], data)) {
           throw new Error(`mismatch at ${tile}`)
         }
       }
