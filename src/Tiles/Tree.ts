@@ -63,7 +63,7 @@ export class Tree {
   }
 
   appendData(data: Uint8Array) {
-    const hash = this.th.hashLeaf(data)
+    const hash = this.th.hash_leaf(data)
     this.appendHash(hash)
   }
 
@@ -100,7 +100,7 @@ export class Tree {
 
   hashAt(size: number) {
     if (size === 0) {
-      return this.th.emptyRoot()
+      return this.th.empty_root()
     }
     const hashes = this.getNodes(RangeNodes(0, size, []))
     let hash = hashes[hashes.length - 1]

@@ -203,7 +203,7 @@ export function stored_hashes_for_record_hash(n: number, h: Uint8Array, r: HashR
 }
 
 export function record_hash(data: Uint8Array) {
-  return th.hashLeaf(data)
+  return th.hash_leaf(data)
 }
 
 export function stored_hashes(n: number, data: Uint8Array, r: HashReader) {
@@ -258,7 +258,7 @@ export function subtree_hash(lo: number, hi: number, hashes: Uint8Array[]): [Uin
 
 export function tree_hash(n: number, r: HashReader) {
   if (n === 0) {
-    return th.emptyRoot()
+    return th.empty_root()
   }
   const indexes = subtree_index(0, n, [])
   let hashes = r.read_hashes(indexes)

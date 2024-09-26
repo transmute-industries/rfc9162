@@ -18,7 +18,7 @@ it('generate log entries', async () => {
     tree.appendData(tree.encodeData(message))
   }
   const tileTreeEncoded = tree.hashes[0].map((h) => Buffer.from(h).toString('base64'))
-  const oldTreeEncoded = entries.map((h) => Buffer.from(tree.th.hashLeaf(h)).toString('base64'))
+  const oldTreeEncoded = entries.map((h) => Buffer.from(tree.th.hash_leaf(h)).toString('base64'))
   // tree equality from leaf equality
   expect(tileTreeEncoded)
     .toEqual(oldTreeEncoded)

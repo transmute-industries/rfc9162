@@ -108,7 +108,7 @@ it('simulated interface', async () => {
 
   return
 
-  const oldTreeEncoded = entries.map((h) => Buffer.from(th.hashLeaf(h)).toString('base64'))
+  const oldTreeEncoded = entries.map((h) => Buffer.from(th.hash_leaf(h)).toString('base64'))
   const root1 = await treeHead(entries)
   expect(Buffer.from(root1).toString('base64')).toBe('eMR1/fvh2IykZmA/Q7o3SypidfJRgnhWN5SPTPSeNeE=')
   const thr = new TileHashReader(entries.length, root1, tileReader)

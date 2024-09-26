@@ -128,11 +128,11 @@ func newTree(entries [][]byte) *Tree {
 
 func TestHashChildren(t *testing.T) {
 	th := rfc6962.DefaultHasher
-	emptyRoot := th.EmptyRoot()
+	empty_root := th.EmptyRoot()
 	emptyLeaf := th.HashLeaf([]byte{})
 	intermediateHash := th.HashChildren([]byte("N123"), []byte("N456")) // fake intermediaries
 	// echo -n | sha256sum
-	if hex.EncodeToString(emptyRoot) != "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" {
+	if hex.EncodeToString(empty_root) != "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" {
 		panic("RFC6962 Empty")
 	}
 	// echo -n 00 | xxd -r -p | sha256sum

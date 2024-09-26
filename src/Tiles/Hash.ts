@@ -23,10 +23,10 @@ export function to_hex(bytes: Uint8Array) {
 
 export class Hash {
   constructor(public hash: (data: Uint8Array) => Uint8Array, public hashSizeBytes: number) { }
-  emptyRoot() {
+  empty_root() {
     return this.hash(EmptyBuffer)
   }
-  hashLeaf(leaf: Uint8Array) {
+  hash_leaf(leaf: Uint8Array) {
     return this.hash(concat(LeafPrefix, leaf))
   }
   hash_children(left: Uint8Array, right: Uint8Array) {

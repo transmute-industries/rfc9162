@@ -87,7 +87,7 @@ it('sanity', () => {
   expect(to_hex(r1)).toBe('1798faa3eb85affab608a28cf885a24a13af4ec794fe3abec046f21b7a799bec')
   const ip0 = tree.inclusionProof(0, 2)
   expect(prettyProof(ip0)).toEqual(["12250d7a57ba6166c61b0b135fc2c21f096f918b69a42d673d812798d9c5d693"])
-  const lh0 = th.hashLeaf(tree.encodeData('L123456'))
+  const lh0 = th.hash_leaf(tree.encodeData('L123456'))
   const ip0v = verify_inclusion(th, 0, 2, lh0, ip0, r1)
   expect(ip0v).toBe(true)
   tree.appendData(tree.encodeData('L012'))
@@ -108,14 +108,14 @@ describe('TestTreeIncremental', () => {
 
   it('the empty leaf hash', () => {
     const leaf = new Uint8Array()
-    const leafHash = th.hashLeaf(leaf)
+    const leafHash = th.hash_leaf(leaf)
     tree.appendHash(leafHash)
     expect(to_hex(tree.hash())).toBe('6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d')
   })
 
   it('the first intermediate / root', () => {
     const leaf = tree.encodeData(`entry-1`)
-    const leafHash = th.hashLeaf(leaf)
+    const leafHash = th.hash_leaf(leaf)
     expect(to_hex(leafHash)).toBe(`e868811a482c27d50b6d45dde79c465d6adb9b06645100477a90cf3d8518898b`)
     tree.appendHash(leafHash)
     expect(to_hex(tree.hash())).toBe('ef2154dde385935cccbaa4129960d8fb571ae75737203e70252c47431d0b2e3e')

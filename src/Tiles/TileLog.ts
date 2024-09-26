@@ -22,7 +22,7 @@ export class TileLog {
   ) {
     this.tile_height = height
     this.th = new Hash(hash_function, hash_size)
-    this.tree_root = this.th.emptyRoot()
+    this.tree_root = this.th.empty_root()
     this.thr = new TileHashReader(this.treeSize, this.tree_root, this)
     this.read_tile = read_tile
     this.maybe_grow_tile = maybe_grow_tile

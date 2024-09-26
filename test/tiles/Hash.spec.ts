@@ -9,9 +9,9 @@ const th = new Hash((data: Uint8Array) => {
 
 it('Hasher', () => {
 
-  const emptyRoot = th.emptyRoot();
-  expect(to_hex(emptyRoot)).toBe('e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855')
-  const emptyLeaf = th.hashLeaf(EmptyBuffer);
+  const empty_root = th.empty_root();
+  expect(to_hex(empty_root)).toBe('e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855')
+  const emptyLeaf = th.hash_leaf(EmptyBuffer);
   expect(to_hex(emptyLeaf)).toBe('6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d')
   // beware these are fake intermediates
   const intermediateHash = th.hash_children(Buffer.from('N123'), Buffer.from('N456'))
