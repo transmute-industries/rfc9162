@@ -1,7 +1,11 @@
 import crypto from 'crypto'
-import { StoredHashes, TileForIndex, Path, TreeHash, Tile, StoredHashCount, Hash, TileHashReader, HashFromTile, NewTiles, ReadTileData, SplitStoredHashIndex } from "../../src"
-
+import { TileLog } from '../../src/Tiles/TileLog'
 import { treeHead } from '../../src/RFC9162';
+import { tile_for_storage_id, tile_to_path } from '../../src/Tiles/Tile';
+
+const global_tiles = {} as Record<string, Uint8Array>
+
+const hash_size = 32
 
 const encoder = new TextEncoder()
 
@@ -9,99 +13,42 @@ const encode = (data: string) => {
   return encoder.encode(data)
 }
 
-const globalTiles = {} as any
+const hash_function = (data: Uint8Array) => {
+  return new Uint8Array(crypto.createHash('sha256').update(data).digest());
+}
 
-class TileLog {
-  public th: Hash
-  public thr: TileHashReader
-  public treeSize = 0
-  public treeRoot: Uint8Array
-  constructor() {
-    this.th = new Hash((data: Uint8Array) => {
-      return new Uint8Array(crypto.createHash('sha256').update(data).digest());
-    }, 32)
-    this.treeRoot = this.th.emptyRoot()
-    this.thr = new TileHashReader(this.treeSize, this.treeRoot, this)
-  }
-  height() {
-    return 2
-  }
-  read_tiles(tiles: Tile[]) {
-    const result = [] as Uint8Array[]
-    for (const tile of tiles) {
-      const tileData = this.read_tile(Path(tile))
-      result.push(tileData)
+const read_tile = (tile: string): Uint8Array => {
+  const [baseTile] = tile.split('.')
+  for (let i = 4; i > 0; i--) {
+    const relatedTile = baseTile + '.' + i
+    if (global_tiles[relatedTile]) {
+      return global_tiles[relatedTile]
     }
-    return result
   }
-  save_tiles(tiles: Tile[]) {
-    // 
+  return new Uint8Array(32)
+}
+
+const maybe_grow_tile = (storageId: number, hash: Uint8Array) => {
+  const [tile, start, end] = tile_for_storage_id(2, storageId)
+  const tileName = tile_to_path(tile)
+  let tileData = read_tile(tileName)
+  if (tileData.length < end) {
+    const tileData2 = new Uint8Array(tileData.length + 32)
+    tileData2.set(tileData)
+    tileData = tileData2
   }
-  read_hashes(storageIds: number[]) {
-    return storageIds.map((storageId) => {
-      const [tile] = TileForIndex(2, storageId)
-      const tileData = this.read_tile(Path(tile))
-      const hash = HashFromTile(tile, tileData, storageId)
-      return hash
-    })
+  if (end - start !== 32) {
+    return null
+  } else {
+    tileData.set(hash, start)
   }
-  size() {
-    return this.treeSize
-  }
-  root() {
-    const hash = TreeHash(this.treeSize, this)
-    return Buffer.from(hash).toString('base64')
-  }
-  read_tile = (tile: string): Uint8Array => {
-    const [baseTile] = tile.split('.')
-    for (let i = 4; i > 0; i--) {
-      const relatedTile = baseTile + '.' + i
-      if (globalTiles[relatedTile]) {
-        return globalTiles[relatedTile]
-      }
-    }
-    return new Uint8Array(32)
-  }
-  maybe_grow_tile = (storageId: number, hash: Uint8Array) => {
-    const [tile, start, end] = TileForIndex(2, storageId)
-    const tileName = Path(tile)
-    let tileData = this.read_tile(tileName)
-    if (tileData.length < end) {
-      const tileData2 = new Uint8Array(tileData.length + 32)
-      tileData2.set(tileData)
-      tileData = tileData2
-    }
-    if (end - start !== 32) {
-      return null
-    } else {
-      tileData.set(hash, start)
-    }
-    globalTiles[tileName] = tileData
-    return tileData
-  }
-  write_record = (record: Uint8Array) => {
-    const leafIndex = this.size()
-    const hashes = StoredHashes(leafIndex, record, this)
-    // problem here....
-    const storageIdIndexStart = StoredHashCount(leafIndex)
-    let storageId = storageIdIndexStart
-    for (const hash of hashes) {
-      // some hashes here, are not meant to be stored at all!
-      // need to figure out if a hash belongs in a tile or not.
-      const tileData = this.maybe_grow_tile(storageId, hash)
-      if (tileData === null) {
-        storageId++
-        continue
-      }
-      storageId++
-    }
-    this.treeSize++;
-  }
+  global_tiles[tileName] = tileData
+  return tileData
 }
 
 
 it('only persist tiles', async () => {
-  const log = new TileLog()
+  const log = new TileLog(hash_function, hash_size, read_tile, maybe_grow_tile)
   const entries = [] as Uint8Array[]
   const root1 = Buffer.from(await treeHead(entries)).toString('base64')
   const root2 = log.root()

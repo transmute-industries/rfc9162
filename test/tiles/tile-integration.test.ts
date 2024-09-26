@@ -4,7 +4,7 @@ import {
   NewTiles,
   ReadTileData,
   StoredHashes,
-  Tile, Path,
+  Tile, tile_to_path,
   TileReader as TR,
   TileHashReader,
   StoredHashIndex,
@@ -51,15 +51,15 @@ class TileReader implements TR {
   writeTileData(oldTreeSize: number, newTreeSize: number,) {
     for (const tile of NewTiles(testH, oldTreeSize, newTreeSize)) {
       const data = ReadTileData(tile, this.hashReader)
-      // console.log(Path(tile), Buffer.from(data).toString('hex'))
-      this.tiles[Path(tile)] = data
+      // console.log(tile_to_path(tile), Buffer.from(data).toString('hex'))
+      this.tiles[tile_to_path(tile)] = data
     }
   }
   read_tiles(tiles: Tile[]) {
     const out = [] as any
     for (let i = 0; i < tiles.length; i++) {
       const tile = tiles[i]
-      const tileName = Path(tile)
+      const tileName = tile_to_path(tile)
       // read from cache ...
       const hasTile = this.tiles[tileName]
       out.push(hasTile)
@@ -72,7 +72,7 @@ class TileReader implements TR {
     this.unsaved -= tiles.length
     for (const tile of tiles) {
       const data = ReadTileData(tile, this.hashReader)
-      this.tiles[Path(tile)] = data
+      this.tiles[tile_to_path(tile)] = data
     }
   }
 }

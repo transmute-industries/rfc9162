@@ -56,9 +56,9 @@ export function SplitStoredHashIndex(index: number) {
   return [level, n]
 }
 
-export function TileForIndex(h: number, storageID: number): [Tile, number, number] {
+export function tile_for_storage_id(h: number, storageID: number): [Tile, number, number] {
   if (h < 0) {
-    throw new Error(`TileForIndex: invalid height ${h}`)
+    throw new Error(`tile_for_storage_id: invalid height ${h}`)
   }
   const tileHeight = h
   let [level, n] = SplitStoredHashIndex(storageID)
@@ -73,7 +73,7 @@ export function TileForIndex(h: number, storageID: number): [Tile, number, numbe
   return [Tile(tileHeight, tileLevel, tileIndex, tileWidth), (n << level) * HashSize, ((n + 1) << level) * HashSize]
 }
 
-export function Path(t: Tile) {
+export function tile_to_path(t: Tile) {
   const [H, L, N, W] = t
   return `tile/${H}/${L}/${N}.${W}`
 }
@@ -90,15 +90,15 @@ function NodeHash(left: Uint8Array, right: Uint8Array) {
 export function HashFromTile(t: Tile, data: Uint8Array, storageID: number) {
   const [tH, tL, tN, tW] = t
   if (tH < 1 || tH > 30 || tL < 0 || tL >= 64 || tW < 1 || tW > (1 << tH)) {
-    throw new Error(`invalid ${Path(t)}`)
+    throw new Error(`invalid ${tile_to_path(t)}`)
   }
   if (data.length < tW * HashSize) {
-    throw new Error(`data length ${data.length} is too short for ${Path(t)}`)
+    throw new Error(`data length ${data.length} is too short for ${tile_to_path(t)}`)
   }
-  const [t1, start, end] = TileForIndex(tH, storageID)
+  const [t1, start, end] = tile_for_storage_id(tH, storageID)
   const [t1H, t1L, t1N, t1W] = t1
   if (tL !== t1L || tN !== t1N || tW < t1W) {
-    throw new Error(`index ${storageID} is in ${Path(t1)} not ${Path(t)}`)
+    throw new Error(`index ${storageID} is in ${tile_to_path(t1)} not ${tile_to_path(t)}`)
   }
   const slice = data.slice(start, end)
   return tileHash(slice)
@@ -398,14 +398,14 @@ export class TileHashReader {
     const stxTileOrder = new Array(stx.length).fill(0)
     for (let i = 0; i < stx.length; i++) {
       const x = stx[i]
-      let [tile] = TileForIndex(h, x)
+      let [tile] = tile_for_storage_id(h, x)
       tile = tileParent(tile, 0, this.size)
-      if (tileOrder[Path(tile)]) {
-        stxTileOrder[i] = tileOrder[Path(tile)]
+      if (tileOrder[tile_to_path(tile)]) {
+        stxTileOrder[i] = tileOrder[tile_to_path(tile)]
         continue
       }
       stxTileOrder[i] = tiles.length
-      tileOrder[Path(tile)] = tiles.length
+      tileOrder[tile_to_path(tile)] = tiles.length
       tiles.push(tile)
     }
 
@@ -421,13 +421,13 @@ export class TileHashReader {
         throw new Error(`indexes not in tree`)
       }
 
-      const [tile] = TileForIndex(h, x)
+      const [tile] = tile_for_storage_id(h, x)
       let k = 0;
       for (; ; k++) {
         const p = tileParent(tile, k, this.size)
-        if (tileOrder[Path(p)] !== undefined) {
+        if (tileOrder[tile_to_path(p)] !== undefined) {
           if (k === 0) {
-            indexTileOrder[i] = tileOrder[Path(p)]
+            indexTileOrder[i] = tileOrder[tile_to_path(p)]
           }
           break
         }
@@ -446,7 +446,7 @@ export class TileHashReader {
           // This tile has a parent, so it must be full.
           throw new Error(`"bad math in tileHashReader: %d %d %v`)
         }
-        tileOrder[Path(p)] = tiles.length
+        tileOrder[tile_to_path(p)] = tiles.length
         if (k == 0) {
           indexTileOrder[i] = tiles.length
         }
@@ -486,7 +486,7 @@ export class TileHashReader {
     for (let i = stx.length; i < tiles.length; i++) {
       const tile = tiles[i]
       const p = tileParent(tile, 1, this.size)
-      const j = tileOrder[Path(p)]
+      const j = tileOrder[tile_to_path(p)]
       if (j === undefined) {
         throw new Error(`bad math in tileHashReader %d %v: lost parent of %v`)
       }
