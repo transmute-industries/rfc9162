@@ -60,17 +60,17 @@ export function tile_for_storage_id(h: number, storageID: number): [Tile, number
   if (h < 0) {
     throw new Error(`tile_for_storage_id: invalid height ${h}`)
   }
-  const tileHeight = h
+  const tile_height = h
   let [level, n] = SplitStoredHashIndex(storageID)
   const tileLevel = Math.floor(level / h)
 
-  // let t = [tileHeight, tileLevel, tileIndex, tileWidth] as any
+  // let t = [tile_height, tileLevel, tileIndex, tileWidth] as any
   level -= tileLevel * h
   const tileIndex = n << level >> h
-  n -= tileIndex << tileHeight >> level
+  n -= tileIndex << tile_height >> level
   const tileWidth = (n + 1) >> 0 << level
 
-  return [Tile(tileHeight, tileLevel, tileIndex, tileWidth), (n << level) * HashSize, ((n + 1) << level) * HashSize]
+  return [Tile(tile_height, tileLevel, tileIndex, tileWidth), (n << level) * HashSize, ((n + 1) << level) * HashSize]
 }
 
 export function tile_to_path(t: Tile) {

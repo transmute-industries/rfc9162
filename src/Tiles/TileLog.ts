@@ -9,10 +9,10 @@ export class TileLog {
   public th: Hash
   public thr: TileHashReader
   public treeSize = 0
-  public treeRoot: Uint8Array
+  public tree_root: Uint8Array
   public read_tile
   public maybe_grow_tile
-  public tileHeight: number
+  public tile_height: number
   constructor(
     height: number,
     hash_size: number,
@@ -20,10 +20,10 @@ export class TileLog {
     read_tile: (tile: string) => Uint8Array,
     maybe_grow_tile: (storageId: number, hash: Uint8Array) => Uint8Array | null
   ) {
-    this.tileHeight = height
+    this.tile_height = height
     this.th = new Hash(hash_function, hash_size)
-    this.treeRoot = this.th.emptyRoot()
-    this.thr = new TileHashReader(this.treeSize, this.treeRoot, this)
+    this.tree_root = this.th.emptyRoot()
+    this.thr = new TileHashReader(this.treeSize, this.tree_root, this)
     this.read_tile = read_tile
     this.maybe_grow_tile = maybe_grow_tile
   }
@@ -31,7 +31,7 @@ export class TileLog {
     return record_hash(data)
   }
   height() {
-    return this.tileHeight
+    return this.tile_height
   }
   read_tiles(tiles: Tile[]) {
     const result = [] as Uint8Array[]
