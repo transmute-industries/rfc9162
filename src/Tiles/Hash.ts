@@ -1,10 +1,10 @@
 
 
 
-export const HashSize = 32
+export const hash_size = 32
 export const EmptyBuffer = new Uint8Array()
 export const LeafPrefix = new Uint8Array([0])
-export const IntermediatePrefix = new Uint8Array([1])
+export const intermediate_prefix = new Uint8Array([1])
 
 export function concat(a1: Uint8Array, a2: Uint8Array): Uint8Array {
   // sum of individual array lengths
@@ -14,7 +14,7 @@ export function concat(a1: Uint8Array, a2: Uint8Array): Uint8Array {
   return mergedArray
 }
 
-export function toHex(bytes: Uint8Array) {
+export function to_hex(bytes: Uint8Array) {
   return bytes.reduce(
     (str: string, byte: number) => str + byte.toString(16).padStart(2, '0'),
     '',
@@ -30,6 +30,6 @@ export class Hash {
     return this.hash(concat(LeafPrefix, leaf))
   }
   hashChildren(left: Uint8Array, right: Uint8Array) {
-    return this.hash(concat(IntermediatePrefix, concat(left, right)))
+    return this.hash(concat(intermediate_prefix, concat(left, right)))
   }
 }

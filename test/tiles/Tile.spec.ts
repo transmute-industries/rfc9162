@@ -2,13 +2,13 @@ import crypto from 'crypto'
 import {
   tile_for_storage_id,
   hash_from_tile,
-  Hash, Tree, concat, toHex,
+  Hash, Tree, concat, to_hex,
   pretty_hash, new_tiles,
   pretty_hashes,
   read_tile_data, stored_hash_count,
   stored_hashes, stored_hash_index,
   record_hash, tree_hash,
-  Tile, tile_to_path, HashSize,
+  Tile, tile_to_path, hash_size,
   tile_bytes_are_equal,
   prove_record,
   check_record,
@@ -41,7 +41,7 @@ describe('hash_from_tile', () => {
     const index = 0
     const [tile] = tile_for_storage_id(2, index)
     expect(
-      toHex(
+      to_hex(
         hash_from_tile(tile, rawData, index)
       ))
       .toBe(
@@ -52,7 +52,7 @@ describe('hash_from_tile', () => {
     const index = 1
     const [tile,] = tile_for_storage_id(2, index)
     expect(
-      toHex(
+      to_hex(
         hash_from_tile(tile, rawData, index)
       ))
       .toBe(
@@ -64,7 +64,7 @@ describe('hash_from_tile', () => {
     const index = 2
     const [tile] = tile_for_storage_id(2, index)
     expect(
-      toHex(
+      to_hex(
         hash_from_tile(tile, rawData, index)
       ))
       .toBe(
@@ -76,7 +76,7 @@ describe('hash_from_tile', () => {
     const index = 3
     const [tile] = tile_for_storage_id(2, index)
     expect(
-      toHex(
+      to_hex(
         hash_from_tile(tile, rawData, index)
       ))
       .toBe(
@@ -88,7 +88,7 @@ describe('hash_from_tile', () => {
     const index = 4
     const [tile] = tile_for_storage_id(2, index)
     expect(
-      toHex(
+      to_hex(
         hash_from_tile(tile, rawData, index)
       ))
       .toBe(
@@ -158,7 +158,7 @@ describe('TestTiledTree', () => {
         const data = read_tile_data(tile, storage)
         const old = Tile(tile[0], tile[1], tile[2], tile[3] - 1)
         const oldData = tiles[tile_to_path(old)] || new Uint8Array()
-        if ((oldData.length != (data.length - HashSize)) || !tile_bytes_are_equal(oldData, data.slice(0, oldData.length))) {
+        if ((oldData.length != (data.length - hash_size)) || !tile_bytes_are_equal(oldData, data.slice(0, oldData.length))) {
           throw new Error(`tile ${tile} not extending earlier tile ${old}`)
         }
         tiles[tile_to_path(tile)] = data
@@ -183,7 +183,7 @@ describe('TestTiledTree', () => {
           throw new Error(`tile_for_storage_id(${testH}, ${j}) = ${tile_to_path(tile)}, not yet stored (i=${i}, stored ${storedHashes.length})`)
         }
         const h = hash_from_tile(tile, data, j)
-        if (toHex(h) !== toHex(storedHashes[j])) {
+        if (to_hex(h) !== to_hex(storedHashes[j])) {
           throw new Error(`hash_from_tile(${tile_to_path(tile)}, ${j}) = ${h}, want ${storedHashes[j]}`)
         }
       }
@@ -210,7 +210,7 @@ describe('TestTiledTree', () => {
       const thr = new TileHashReader(i + 1, th, tileStorage)
       for (let j = 0; j <= i; j++) {
         const h = thr.read_hashes([stored_hash_index(0, j)])
-        if (toHex(h[0]) != toHex(leafHashes[j])) {
+        if (to_hex(h[0]) != to_hex(leafHashes[j])) {
           throw new Error(`TileHashReader(%d).read_hashes(%d) returned wrong hash`)
         }
 
@@ -235,7 +235,7 @@ describe('TestTiledTree', () => {
       }
       for (let j = 0; j <= i; j++) {
         const h = tree_hash(j + 1, thr)
-        if (toHex(h) != toHex(trees[j])) {
+        if (to_hex(h) != to_hex(trees[j])) {
           throw new Error(`"tree_hash(%d, TileHashReader(%d)) = %x, want %x (%v)`)
         }
 

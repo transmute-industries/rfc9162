@@ -1,4 +1,4 @@
-import { Hash, toHex } from "./Hash";
+import { Hash, to_hex } from "./Hash";
 import { TNode, RangeNodes } from "./Node";
 import { Inclusion, Consistency, Rehash } from "./Proof";
 
@@ -8,7 +8,7 @@ export const encoder = new TextEncoder()
 
 export function prettyProof(hashes: Uint8Array[]) {
   return hashes.map((h) => {
-    return toHex(h)
+    return to_hex(h)
   })
 }
 

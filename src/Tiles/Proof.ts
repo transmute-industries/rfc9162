@@ -1,6 +1,6 @@
 
 import { TNode, Len64, Coverage, RangeSize, Sibling, Parent, RangeNodes, trailing_zeros_64, OnesCount64 } from "./Node"
-import { Hash, toHex } from "./Hash"
+import { Hash, to_hex } from "./Hash"
 
 export type Nodes = {
   ids: TNode[],
@@ -118,7 +118,7 @@ function RootFromInclusionProof(th: Hash, index: number, size: number, leafHash:
 }
 
 function VerifyMatch(calculatedRoot: Uint8Array, expectedRoot: Uint8Array) {
-  return toHex(calculatedRoot) === toHex(expectedRoot)
+  return to_hex(calculatedRoot) === to_hex(expectedRoot)
 }
 
 export function VerifyInclusion(th: Hash, index: number, size: number, leafHash: Uint8Array, proof: Uint8Array[], root: Uint8Array) {

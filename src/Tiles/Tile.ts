@@ -2,7 +2,7 @@ import crypto from 'crypto'
 
 import { trailing_zeros_64 } from "./Node";
 
-import { HashSize, Hash, concat, IntermediatePrefix, toHex } from "./Hash";
+import { hash_size, Hash, concat, intermediate_prefix, to_hex } from "./Hash";
 
 // need to make this a parameter
 const th = new Hash((data: Uint8Array) => {
@@ -85,7 +85,7 @@ export function tile_for_storage_id(h: number, storageID: number): [Tile, number
   n -= tileIndex << tile_height >> level
   const tileWidth = (n + 1) >> 0 << level
 
-  return [Tile(tile_height, tileLevel, tileIndex, tileWidth), (n << level) * HashSize, ((n + 1) << level) * HashSize]
+  return [Tile(tile_height, tileLevel, tileIndex, tileWidth), (n << level) * hash_size, ((n + 1) << level) * hash_size]
 }
 
 export function tile_to_path(t: Tile) {
@@ -94,7 +94,7 @@ export function tile_to_path(t: Tile) {
 }
 
 function node_hash(left: Uint8Array, right: Uint8Array) {
-  return th.hash(concat(IntermediatePrefix, concat(left, right)))
+  return th.hash(concat(intermediate_prefix, concat(left, right)))
 }
 
 export function hash_from_tile(t: Tile, data: Uint8Array, storageID: number) {
@@ -102,11 +102,12 @@ export function hash_from_tile(t: Tile, data: Uint8Array, storageID: number) {
   if (tH < 1 || tH > 30 || tL < 0 || tL >= 64 || tW < 1 || tW > (1 << tH)) {
     throw new Error(`invalid ${tile_to_path(t)}`)
   }
-  if (data.length < tW * HashSize) {
+  if (data.length < tW * hash_size) {
     throw new Error(`data length ${data.length} is too short for ${tile_to_path(t)}`)
   }
   const [t1, start, end] = tile_for_storage_id(tH, storageID)
-  const [t1H, t1L, t1N, t1W] = t1
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_t1H, t1L, t1N, t1W] = t1
   if (tL !== t1L || tN !== t1N || tW < t1W) {
     throw new Error(`index ${storageID} is in ${tile_to_path(t1)} not ${tile_to_path(t)}`)
   }
@@ -118,7 +119,7 @@ export function tile_hash(data: Uint8Array): Uint8Array {
   if (data.length == 0) {
     throw new Error("bad math in tile_hash")
   }
-  if (data.length === HashSize) {
+  if (data.length === hash_size) {
     return data
   }
   const n = data.length / 2
@@ -271,7 +272,7 @@ export function tree_hash(n: number, r: HashReader) {
 }
 
 export function tile_bytes_are_equal(tileData1: Uint8Array, tileData2: Uint8Array) {
-  return toHex(tileData1) === toHex(tileData2)
+  return to_hex(tileData1) === to_hex(tileData2)
 }
 
 export function leaf_proof_index(lo: number, hi: number, n: number, need: number[]) {
@@ -371,7 +372,7 @@ export function check_record(p: RecordProof, t: number, th: Uint8Array, n: numbe
     throw new Error(`tlog: invalid inputs in check_record`)
   }
   const th2 = run_record_proof(p, 0, t, n, h)
-  return toHex(th2) === toHex(th)
+  return to_hex(th2) === to_hex(th)
 }
 
 export function tile_parent(t: Tile, k: number, n: number): Tile {
@@ -465,7 +466,7 @@ export class TileHashReader {
     // this slows things down... and should be removed...
     // for (let i = 0; i < tiles.length; i++) {
     //   const tile = tiles[i]
-    //   if (data[i].length !== tile[3] * HashSize) {
+    //   if (data[i].length !== tile[3] * hash_size) {
     //     throw new Error(`TileReader returned bad result slice (%v len=%d, want %d)`)
     //   }
     // }
@@ -479,7 +480,7 @@ export class TileHashReader {
       const h = hash_from_tile(tiles[stxTileOrder[i]], data[stxTileOrder[i]], stx[i])
       th = node_hash(h, th)
     }
-    if (toHex(th) != toHex(this.root)) {
+    if (to_hex(th) != to_hex(this.root)) {
       throw new Error(`downloaded inconsistent tile`)
     }
 
@@ -492,7 +493,7 @@ export class TileHashReader {
         throw new Error(`bad math in tileHashReader %d %v: lost parent of %v`)
       }
       const h = hash_from_tile(p, data[j], stored_hash_index(p[1] * p[0], tile[2]))
-      if (toHex(h) != toHex(tile_hash(data[i]))) {
+      if (to_hex(h) != to_hex(tile_hash(data[i]))) {
         throw new Error(`downloaded inconsistent tile 2`)
       }
     }
@@ -626,7 +627,7 @@ export function check_tree(p: Uint8Array[], t: number, th: Uint8Array, n: number
   }
 
   const [h2, th2] = run_tree_proof(p, 0, t, n, h)
-  if (toHex(th2) == toHex(th) && toHex(h2) == toHex(h)) {
+  if (to_hex(th2) == to_hex(th) && to_hex(h2) == to_hex(h)) {
     return true
   }
   throw new Error('errProofFailed')
