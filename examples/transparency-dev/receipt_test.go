@@ -10,7 +10,6 @@ import (
 
 	"github.com/transparency-dev/merkle"
 	"github.com/transparency-dev/merkle/compact"
-	"github.com/transparency-dev/merkle/proof"
 	"github.com/transparency-dev/merkle/rfc6962"
 )
 
@@ -92,25 +91,25 @@ func (t *Tree) HashAt(size uint64) []byte {
 // tree of the given size. Requires 0 <= index < size <= Size(), otherwise may
 // panic.
 func (t *Tree) InclusionProof(index, size uint64) ([][]byte, error) {
-	nodes, err := proof.Inclusion(index, size)
+	nodes, err := proof.inclusion(index, size)
 
 	// fmt.Println(nodes)
 	if err != nil {
 		return nil, err
 	}
-	return nodes.Rehash(t.getNodes(nodes.IDs), t.hasher.HashChildren)
+	return nodes.rehash(t.getNodes(nodes.IDs), t.hasher.HashChildren)
 }
 
 // ConsistencyProof returns the consistency proof between the two given tree
 // sizes. Requires 0 <= size1 <= size2 <= Size(), otherwise may panic.
 func (t *Tree) ConsistencyProof(size1, size2 uint64) ([][]byte, error) {
-	nodes, err := proof.Consistency(size1, size2)
+	nodes, err := proof.consistency(size1, size2)
 
 	if err != nil {
 		return nil, err
 	}
 	hashes := t.getNodes(nodes.IDs)
-	return nodes.Rehash(hashes, t.hasher.HashChildren)
+	return nodes.rehash(hashes, t.hasher.HashChildren)
 }
 
 func (t *Tree) getNodes(ids []compact.NodeID) [][]byte {
@@ -175,7 +174,7 @@ func TestInclusion(t *testing.T) {
 	p1, _ := tree.InclusionProof(0, 2)
 	// fmt.Println(hex.EncodeToString(p1[0]))
 	// 12250d7a57ba6166c61b0b135fc2c21f096f918b69a42d673d812798d9c5d693
-	err := proof.VerifyInclusion(th, 0, 2, th.HashLeaf([]byte("L123456")), p1, tree.HashAt(2))
+	err := proof.verify_inclusion(th, 0, 2, th.HashLeaf([]byte("L123456")), p1, tree.HashAt(2))
 	if err != nil {
 		t.Error(err)
 	}
@@ -186,7 +185,7 @@ func TestInclusion(t *testing.T) {
 	}
 	p2, _ := tree.ConsistencyProof(2, 3)
 	// fmt.Println(hex.EncodeToString(p2[0]))
-	err = proof.VerifyConsistency(tree.hasher, 2, 3, p2, tree.HashAt(2), tree.HashAt(3))
+	err = proof.verify_consistency(tree.hasher, 2, 3, p2, tree.HashAt(2), tree.HashAt(3))
 	if err != nil {
 		t.Error(err)
 	}
@@ -243,7 +242,7 @@ func TestSbom(t *testing.T) {
 	root1 := tree.Hash()
 	size1 := tree.Size()
 	proof1, _ := tree.InclusionProof(fileToCheckIndex, size1)
-	inclusionProofError := proof.VerifyInclusion(th, index1, size1, hash1, proof1, root1)
+	inclusionProofError := proof.verify_inclusion(th, index1, size1, hash1, proof1, root1)
 	if inclusionProofError != nil {
 		t.Error(inclusionProofError)
 	}

@@ -14,6 +14,6 @@ it('Hasher', () => {
   const emptyLeaf = th.hashLeaf(EmptyBuffer);
   expect(to_hex(emptyLeaf)).toBe('6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d')
   // beware these are fake intermediates
-  const intermediateHash = th.hashChildren(Buffer.from('N123'), Buffer.from('N456'))
+  const intermediateHash = th.hash_children(Buffer.from('N123'), Buffer.from('N456'))
   expect(to_hex(intermediateHash)).toBe('aa217fe888e47007fa15edab33c2b492a722cb106c64667fc2b044444de66bbb')
 })

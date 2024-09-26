@@ -1,5 +1,5 @@
 
-import { TNode, Len64, Coverage, RangeSize, Sibling, Parent, RangeNodes, trailing_zeros_64, OnesCount64 } from "./Node"
+import { TNode, Len64, Coverage, RangeSize, Sibling, Parent, RangeNodes, trailing_zeros_64, ones_count_64 } from "./Node"
 import { Hash, to_hex } from "./Hash"
 
 export type Nodes = {
@@ -11,7 +11,7 @@ export type Nodes = {
 
 export type HashChildren = (left: Uint8Array, right: Uint8Array) => Uint8Array
 
-function SkipFirst(nodes: Nodes) {
+function skip_first(nodes: Nodes) {
   nodes.ids = nodes.ids.slice(1, nodes.ids.length)
   if (nodes.begin < nodes.end) {
     nodes.begin--
@@ -51,26 +51,26 @@ export function Nodes(index: number, level: number, size: number): Nodes {
 }
 
 
-function InnerProofSize(index: number, size: number) {
+function inner_proof_size(index: number, size: number) {
   return Len64(index ^ (size - 1))
 }
 
 
 
-function DecomposeInclusionProof(index: number, size: number) {
-  const inner = InnerProofSize(index, size)
-  const border = OnesCount64(index >> inner)
+function decompose_inclusion_proof(index: number, size: number) {
+  const inner = inner_proof_size(index, size)
+  const border = ones_count_64(index >> inner)
   return [inner, border]
 }
 
-function ChainInner(th: Hash, seed: Uint8Array, proof: Uint8Array[], index: number) {
+function chain_inner(th: Hash, seed: Uint8Array, proof: Uint8Array[], index: number) {
   let i = 0;
   while (i < proof.length) {
     const h = proof[i]
     if ((index >> i) == 0) {
-      seed = th.hashChildren(seed, h)
+      seed = th.hash_children(seed, h)
     } else {
-      seed = th.hashChildren(h, seed)
+      seed = th.hash_children(h, seed)
     }
     i++;
   }
@@ -79,55 +79,55 @@ function ChainInner(th: Hash, seed: Uint8Array, proof: Uint8Array[], index: numb
 
 
 
-export function ChainInnerRight(th: Hash, seed: Uint8Array, proof: Uint8Array[], index: number) {
+export function chain_inner_right(th: Hash, seed: Uint8Array, proof: Uint8Array[], index: number) {
   let i = 0;
   while (i < proof.length) {
     const h = proof[i]
     if (index >> i) {
-      seed = th.hashChildren(h, seed)
+      seed = th.hash_children(h, seed)
     }
     i++
   }
   return seed
 }
 
-function ChainBorderRight(th: Hash, seed: Uint8Array, proof: Uint8Array[]) {
+function chain_border_right(th: Hash, seed: Uint8Array, proof: Uint8Array[]) {
   const i = 0;
   while (i < proof.length) {
     const h = proof[i]
-    seed = th.hashChildren(h, seed)
+    seed = th.hash_children(h, seed)
   }
   return seed
 }
 
-function RootFromInclusionProof(th: Hash, index: number, size: number, leafHash: Uint8Array, proof: Uint8Array[]) {
+function root_from_inclusion_proof(th: Hash, index: number, size: number, leafHash: Uint8Array, proof: Uint8Array[]) {
   if (index >= size) {
     throw new Error(`index is beyond size: ${index} >= ${size}`)
   }
   if (leafHash.length != th.hashSizeBytes) {
     throw new Error(`leafHash has unexpected size ${leafHash.length}, want ${th.hashSizeBytes}`)
   }
-  const [inner, border] = DecomposeInclusionProof(index, size)
+  const [inner, border] = decompose_inclusion_proof(index, size)
 
   if (proof.length != inner + border) {
     throw new Error(`wrong proof size ${proof.length}, want ${inner + border}`)
   }
-  let res = ChainInner(th, leafHash, proof.slice(0, inner), index)
-  res = ChainBorderRight(th, res, proof.slice(inner, proof.length))
+  let res = chain_inner(th, leafHash, proof.slice(0, inner), index)
+  res = chain_border_right(th, res, proof.slice(inner, proof.length))
   return res
 }
 
-function VerifyMatch(calculatedRoot: Uint8Array, expectedRoot: Uint8Array) {
+function verify_match(calculatedRoot: Uint8Array, expectedRoot: Uint8Array) {
   return to_hex(calculatedRoot) === to_hex(expectedRoot)
 }
 
-export function VerifyInclusion(th: Hash, index: number, size: number, leafHash: Uint8Array, proof: Uint8Array[], root: Uint8Array) {
-  const calculatedRoot = RootFromInclusionProof(th, index, size, leafHash, proof)
-  return VerifyMatch(calculatedRoot, root)
+export function verify_inclusion(th: Hash, index: number, size: number, leafHash: Uint8Array, proof: Uint8Array[], root: Uint8Array) {
+  const calculatedRoot = root_from_inclusion_proof(th, index, size, leafHash, proof)
+  return verify_match(calculatedRoot, root)
 }
 
 
-export function VerifyConsistency(th: Hash, size1: number, size2: number, proof: Uint8Array[], root1: Uint8Array, root2: Uint8Array) {
+export function verify_consistency(th: Hash, size1: number, size2: number, proof: Uint8Array[], root1: Uint8Array, root2: Uint8Array) {
   if (size2 < size1) {
     throw new Error(`size2 (${size2}) < size1 (${size1})`)
   }
@@ -135,7 +135,7 @@ export function VerifyConsistency(th: Hash, size1: number, size2: number, proof:
     if (proof.length > 0) {
       throw new Error(`size1=size2, but proof is not empty`)
     }
-    return VerifyMatch(root1, root2)
+    return verify_match(root1, root2)
   }
   if (size1 == 0) {
     if (proof.length > 0) {
@@ -147,7 +147,7 @@ export function VerifyConsistency(th: Hash, size1: number, size2: number, proof:
     throw new Error(`empty proof`)
   }
 
-  let [inner, border] = DecomposeInclusionProof(size1 - 1, size2)
+  let [inner, border] = decompose_inclusion_proof(size1 - 1, size2)
   const shift = trailing_zeros_64(size1)
   inner -= shift
 
@@ -162,30 +162,30 @@ export function VerifyConsistency(th: Hash, size1: number, size2: number, proof:
   }
   proof = proof.slice(start, proof.length)
   const mask = (size1 - 1) >> shift
-  let hash1 = ChainInnerRight(th, seed, proof.slice(0, inner), mask)
-  hash1 = ChainBorderRight(th, hash1, proof.slice(inner, proof.length))
-  if (!VerifyMatch(hash1, root1)) {
+  let hash1 = chain_inner_right(th, seed, proof.slice(0, inner), mask)
+  hash1 = chain_border_right(th, hash1, proof.slice(inner, proof.length))
+  if (!verify_match(hash1, root1)) {
     console.log({ hash1, root1 })
     throw new Error('inconsistency with root 1')
   }
-  let hash2 = ChainInner(th, seed, proof.slice(0, inner), mask)
-  hash2 = ChainBorderRight(th, hash2, proof.slice(inner, proof.length))
-  if (!VerifyMatch(hash2, root2)) {
+  let hash2 = chain_inner(th, seed, proof.slice(0, inner), mask)
+  hash2 = chain_border_right(th, hash2, proof.slice(inner, proof.length))
+  if (!verify_match(hash2, root2)) {
     throw new Error('inconsistency with root 2')
   }
   return true
 }
 
 
-export function Inclusion(index: number, size: number): Nodes {
+export function inclusion(index: number, size: number): Nodes {
   if (index >= size) {
     throw new Error(`Index ${index} out of bounds for tree size ${size}`)
   }
   const nodes = Nodes(index, 0, size)
-  return SkipFirst(nodes)
+  return skip_first(nodes)
 }
 
-export function Consistency(size1: number, size2: number): Nodes {
+export function consistency(size1: number, size2: number): Nodes {
   if (size1 > size2) {
     throw new Error(`tree size ${size1} > ${size2}`)
   }
@@ -196,12 +196,12 @@ export function Consistency(size1: number, size2: number): Nodes {
   const index = (size1 - 1) >> level
   const p = Nodes(index, level, size2)
   if (index == 0) {
-    return SkipFirst(p)
+    return skip_first(p)
   }
   return p
 }
 
-export function Rehash(nodes: Nodes, hashes: Uint8Array[], hashChildren: HashChildren) {
+export function rehash(nodes: Nodes, hashes: Uint8Array[], hash_children: HashChildren) {
   if (hashes.length != nodes.ids.length) {
     throw new Error(`got ${hashes.length} hashes but expected ${nodes.ids.length}`)
   }
@@ -214,7 +214,7 @@ export function Rehash(nodes: Nodes, hashes: Uint8Array[], hashChildren: HashChi
       while (++i < nodes.end) {
         const left = hashes[i]
         const right = hash
-        hash = hashChildren(left, right)
+        hash = hash_children(left, right)
         i++
       }
       i--

@@ -16,7 +16,7 @@ export const root_from_consistency = async (first_tree_hash: Uint8Array, proof: 
   const consistency_path = proof.consistency_path
   // 1.  If consistency_path is an empty array, stop and fail the proof verification.
   if (consistency_path.length === 0) {
-    throw new Error('Consistency Proof Verification Failed')
+    throw new Error('consistency Proof Verification Failed')
   }
 
   // 2.  If first is an exact power of 2, then prepend first_hash to the consistency_path array.
@@ -44,7 +44,7 @@ export const root_from_consistency = async (first_tree_hash: Uint8Array, proof: 
     // a.  If sn is 0, then stop the iteration and fail the proof
     //        verification.
     if (sn === 0) {
-      throw new Error('Consistency Proof Verification Failed')
+      throw new Error('consistency Proof Verification Failed')
     }
     // If LSB(fn) is set, or if fn is equal to sn, then:
     if (LSB(fn) || fn === sn) {
@@ -69,7 +69,7 @@ export const root_from_consistency = async (first_tree_hash: Uint8Array, proof: 
   const fr_is_first_hash = EQUAL(fr, first_tree_hash)
   const sn_is_zero = sn === 0;
   if (!sn_is_zero || !fr_is_first_hash) {
-    throw new Error('Consistency Proof Verification Failed')
+    throw new Error('consistency Proof Verification Failed')
   }
   return sr
 }

@@ -1,7 +1,7 @@
 import fs from 'fs'
 import crypto from 'crypto'
 
-import { Hash, Tree, VerifyInclusion, VerifyConsistency, to_hex, prettyInclusionProof, prettyConsistencyProof, prettyProof } from "../../src";
+import { Hash, Tree, verify_inclusion, verify_consistency, to_hex, prettyInclusionProof, prettyConsistencyProof, prettyProof } from "../../src";
 
 const th = new Hash((data: Uint8Array) => {
   return new Uint8Array(crypto.createHash('sha256').update(data).digest());
@@ -88,14 +88,14 @@ it('sanity', () => {
   const ip0 = tree.inclusionProof(0, 2)
   expect(prettyProof(ip0)).toEqual(["12250d7a57ba6166c61b0b135fc2c21f096f918b69a42d673d812798d9c5d693"])
   const lh0 = th.hashLeaf(tree.encodeData('L123456'))
-  const ip0v = VerifyInclusion(th, 0, 2, lh0, ip0, r1)
+  const ip0v = verify_inclusion(th, 0, 2, lh0, ip0, r1)
   expect(ip0v).toBe(true)
   tree.appendData(tree.encodeData('L012'))
   const r2 = tree.hash()
   expect(to_hex(r2)).toBe('3322c85256086aa0e1984dff85eab5f1e11d4b8fbbd6c4510611e3bbab0e132a')
   const cp0 = tree.consistencyProof(2, 3)
   expect(prettyProof(cp0)).toEqual(["4852d9c133177e783c92ef70b3f7ca23d7e8f4b5dc02d415b5c7ea6426db046e"])
-  const cp0v = VerifyConsistency(th, 2, 3, cp0, r1, r2)
+  const cp0v = verify_consistency(th, 2, 3, cp0, r1, r2)
   expect(cp0v).toBe(true)
 })
 

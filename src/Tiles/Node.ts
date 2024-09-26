@@ -23,7 +23,7 @@ export function Len64(num: number) {
   return num.toString(2).length;
 }
 
-export function OnesCount64(x: number) {
+export function ones_count_64(x: number) {
   return (x.toString(2).match(/1/g) || []).length
 }
 
@@ -39,7 +39,7 @@ export function Decompose(begin: number, end: number) {
 
 export function RangeSize(begin: number, end: number) {
   const [left, right] = Decompose(begin, end)
-  return OnesCount64(left) + OnesCount64(right)
+  return ones_count_64(left) + ones_count_64(right)
 }
 
 export type TNode = [number, number]

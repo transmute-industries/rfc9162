@@ -29,7 +29,7 @@ export class Hash {
   hashLeaf(leaf: Uint8Array) {
     return this.hash(concat(LeafPrefix, leaf))
   }
-  hashChildren(left: Uint8Array, right: Uint8Array) {
+  hash_children(left: Uint8Array, right: Uint8Array) {
     return this.hash(concat(intermediate_prefix, concat(left, right)))
   }
 }

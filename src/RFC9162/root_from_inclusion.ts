@@ -13,7 +13,7 @@ export const root_from_inclusion = async (
 ): Promise<Uint8Array> => {
   const { tree_size, leaf_index, inclusion_path } = proof
   if (leaf_index > tree_size) {
-    throw new Error('Inclusion Proof Verification Failed')
+    throw new Error('inclusion Proof Verification Failed')
   }
   let fn = leaf_index
   let sn = tree_size - 1
@@ -22,7 +22,7 @@ export const root_from_inclusion = async (
   for (const p of inclusion_path) {
     // a.  If sn is 0, then stop the iteration and fail the proof verification.
     if (sn === 0) {
-      throw new Error('Inclusion Proof Verification Failed')
+      throw new Error('inclusion Proof Verification Failed')
     }
     // b.  If LSB(fn) is set, or if fn is equal to sn, then:
     if (fn % 2 === 1 || fn === sn) {
@@ -48,7 +48,7 @@ export const root_from_inclusion = async (
   }
   const sn_is_0 = sn === 0
   if (!sn_is_0) {
-    throw new Error('Inclusion Proof Verification Failed')
+    throw new Error('inclusion Proof Verification Failed')
   }
   return r
 }

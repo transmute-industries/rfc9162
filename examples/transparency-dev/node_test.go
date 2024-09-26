@@ -83,7 +83,7 @@ func nodes(index uint64, level uint, size uint64) Nodes {
 	// ranges to the left and to the right from it remain to be covered.
 
 	// Add all the nodes (potentially none) that cover the right range, and
-	// represent the ephemeral node. Reverse them so that the Rehash method can
+	// represent the ephemeral node. Reverse them so that the rehash method can
 	// process hashes in the convenient order, from lower to upper levels.
 	len1 := len(nodes)
 	nodes = compact.RangeNodes(end, size, nodes)
@@ -117,7 +117,7 @@ func TestNewNodeID(t *testing.T) {
 	// fmt.Println(bits.trailing_zeros_64(uint64(875214)))
 	// fmt.Println(compact.RangeNodes(0, 15, []compact.NodeID{}))
 
-	// fmt.Println(bits.OnesCount64(123))
+	// fmt.Println(bits.ones_count_64(123))
 
 	// fmt.Println(compact.Decompose(13, 27))
 	// fmt.Println(compact.RangeSize(13, 27))
@@ -125,12 +125,12 @@ func TestNewNodeID(t *testing.T) {
 	// n0 := nodes(1, 2, 3)
 	// fmt.Println(n0.IDs)
 
-	// p0, _ := proof.Inclusion(15, 35)
+	// p0, _ := proof.inclusion(15, 35)
 
 	// fmt.Println(p0.IDs)
 	// fmt.Println(p0.Ephem())
 
-	// p0, _ := proof.Consistency(15, 35)
+	// p0, _ := proof.consistency(15, 35)
 
 	// fmt.Println(p0.IDs)
 

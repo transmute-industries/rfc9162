@@ -1,6 +1,6 @@
 import { Hash, to_hex } from "./Hash";
 import { TNode, RangeNodes } from "./Node";
-import { Inclusion, Consistency, Rehash } from "./Proof";
+import { inclusion, consistency, rehash } from "./Proof";
 
 export const encoder = new TextEncoder()
 
@@ -72,7 +72,7 @@ export class Tree {
     while (((this.size >> level) & 1) == 1) {
       this.hashes[level].push(hash)
       const row = this.hashes[level]
-      hash = this.th.hashChildren(row[row.length - 2], hash)
+      hash = this.th.hash_children(row[row.length - 2], hash)
       level++
     }
     if (level > this.hashes.length) {
@@ -106,22 +106,22 @@ export class Tree {
     let hash = hashes[hashes.length - 1]
     let i = hashes.length - 2;
     while (i >= 0) {
-      hash = this.th.hashChildren(hashes[i], hash)
+      hash = this.th.hash_children(hashes[i], hash)
       i--
     }
     return hash
   }
 
   inclusionProof(index: number, size: number) {
-    const nodes = Inclusion(index, size)
+    const nodes = inclusion(index, size)
     const hashes = this.getNodes(nodes.ids)
-    return Rehash(nodes, hashes, this.th.hashChildren)
+    return rehash(nodes, hashes, this.th.hash_children)
   }
 
   consistencyProof(size1: number, size2: number) {
-    const nodes = Consistency(size1, size2)
+    const nodes = consistency(size1, size2)
     const hashes = this.getNodes(nodes.ids)
-    return Rehash(nodes, hashes, this.th.hashChildren)
+    return rehash(nodes, hashes, this.th.hash_children)
   }
 
   getTile(height: number, level: number, index: number, width?: number) {
