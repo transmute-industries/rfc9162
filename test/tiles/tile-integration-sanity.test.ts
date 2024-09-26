@@ -25,6 +25,10 @@ it('generate log entries', async () => {
   // tree equality by root comparison
   expect(Buffer.from(await treeHead(entries)).toString('hex'))
     .toEqual(Buffer.from(tree.hash()).toString('hex'))
+
+  expect(Buffer.from(await treeHead(entries)).toString('base64'))
+    .toBe('eMR1/fvh2IykZmA/Q7o3SypidfJRgnhWN5SPTPSeNeE=')
+
   // tree equality from hash at size
   expect(Buffer.from(await treeHead(entries.slice(0, 7))).toString('base64'))
     .toEqual(Buffer.from(tree.hashAt(7)).toString('base64'))

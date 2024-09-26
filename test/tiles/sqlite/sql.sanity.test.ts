@@ -89,7 +89,7 @@ class SQLHashStorage {
     const hashes = StoredHashes(index, data, this)
     write_hashes(this.db, hashes)
   }
-  ReadHashes(indexes: number[]) {
+  read_hashes(indexes: number[]) {
     const hashes = [] as Uint8Array[]
     for (const index of indexes) {
       const hash = get_stored_hash_by_index(this.db, index)
@@ -105,8 +105,8 @@ class SQLTileReader implements TileReader {
   constructor(public hashReader: SQLHashStorage) {
     this.hashReader = hashReader
   }
-  Height() { return testH }  // testHeight
-  ReadTiles(tiles: Tile[]) {
+  height() { return testH }  // testHeight
+  read_tiles(tiles: Tile[]) {
     const out = [] as any
     for (let i = 0; i < tiles.length; i++) {
       const tile = tiles[i]
@@ -116,7 +116,7 @@ class SQLTileReader implements TileReader {
     this.unsaved += tiles.length
     return out
   }
-  SaveTiles(tiles: Tile[]) {
+  save_tiles(tiles: Tile[]) {
     // fake persist on client.
     this.unsaved -= tiles.length
   }
@@ -131,7 +131,6 @@ it('synchronous apis', async () => {
   //   // write data
   //   hashReader.writeData(i, data)
   // }
-
 
   const hashReader = new SQLHashStorage(db)
 

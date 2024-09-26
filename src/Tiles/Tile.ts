@@ -87,7 +87,7 @@ function NodeHash(left: Uint8Array, right: Uint8Array) {
   return th.hash(Concat(IntermediatePrefix, Concat(left, right)))
 }
 
-export function HashFromTile(t: Tile, data: Uint8Array, index: number) {
+export function HashFromTile(t: Tile, data: Uint8Array, storageID: number) {
   const [tH, tL, tN, tW] = t
   if (tH < 1 || tH > 30 || tL < 0 || tL >= 64 || tW < 1 || tW > (1 << tH)) {
     throw new Error(`invalid ${Path(t)}`)
@@ -95,10 +95,10 @@ export function HashFromTile(t: Tile, data: Uint8Array, index: number) {
   if (data.length < tW * HashSize) {
     throw new Error(`data length ${data.length} is too short for ${Path(t)}`)
   }
-  const [t1, start, end] = TileForIndex(tH, index)
+  const [t1, start, end] = TileForIndex(tH, storageID)
   const [t1H, t1L, t1N, t1W] = t1
   if (tL !== t1L || tN !== t1N || tW < t1W) {
-    throw new Error(`index ${index} is in ${Path(t1)} not ${Path(t)}`)
+    throw new Error(`index ${storageID} is in ${Path(t1)} not ${Path(t)}`)
   }
   const slice = data.slice(start, end)
   return tileHash(slice)
@@ -145,7 +145,7 @@ export function NewTiles(h: number, oldTreeSize: number, newTreeSize: number) {
 }
 
 export interface HashReader {
-  ReadHashes: (indexes: number[]) => Uint8Array[]
+  read_hashes: (indexes: number[]) => Uint8Array[]
 }
 
 export function ReadTileData(t: Tile, r: HashReader) {
@@ -158,9 +158,9 @@ export function ReadTileData(t: Tile, r: HashReader) {
   for (let i = 0; i < size; i++) {
     indexes[i] = StoredHashIndex(t[0] * t[1], start + i)
   }
-  const hashes = r.ReadHashes(indexes)
+  const hashes = r.read_hashes(indexes)
   if (hashes.length != indexes.length) {
-    throw new Error(`tlog: ReadHashes(${indexes.length} indexes) = ${hashes.length} hashes`)
+    throw new Error(`tlog: read_hashes(${indexes.length} indexes) = ${hashes.length} hashes`)
   }
   const tileData = hashes.reduce(Concat)
   return tileData
@@ -185,7 +185,7 @@ export function StoredHashesForRecordHash(n: number, h: Uint8Array, r: HashReade
     const next = (n >> i) - 1
     indexes[m - 1 - i] = StoredHashIndex(i, next)
   }
-  const old = r.ReadHashes(indexes)
+  const old = r.read_hashes(indexes)
   for (let i = 0; i < m; i++) {
     h = NodeHash(old[m - 1 - i], h)
     hashes.push(h)
@@ -252,7 +252,7 @@ export function TreeHash(n: number, r: HashReader) {
     return th.emptyRoot()
   }
   const indexes = subTreeIndex(0, n, [])
-  let hashes = r.ReadHashes(indexes)
+  let hashes = r.read_hashes(indexes)
   let hash
   const sth = subTreeHash(0, n, hashes)
   hash = sth[0]
@@ -321,9 +321,9 @@ export function ProveRecord(t: number, n: number, r: HashReader) {
   if (indexes.length === 0) {
     return [] as RecordProof
   }
-  let hashes = r.ReadHashes(indexes)
+  let hashes = r.read_hashes(indexes)
   if (hashes.length != indexes.length) {
-    throw new Error(`tlog: ReadHashes(${indexes.length} indexes) = ${hashes.length} hashes`)
+    throw new Error(`tlog: read_hashes(${indexes.length} indexes) = ${hashes.length} hashes`)
   }
   let p;
   [p, hashes] = leafProof(0, t, n, hashes)
@@ -368,9 +368,9 @@ export function CheckRecord(p: RecordProof, t: number, th: Uint8Array, n: number
 }
 
 export interface TileReader {
-  Height: () => number
-  ReadTiles: (tiles: Tile[]) => Uint8Array[]
-  SaveTiles: (tiles: Tile[], data: Uint8Array[]) => void
+  height: () => number
+  read_tiles: (tiles: Tile[]) => Uint8Array[]
+  save_tiles: (tiles: Tile[], data: Uint8Array[]) => void
 }
 
 export function tileParent(t: Tile, k: number, n: number): Tile {
@@ -390,8 +390,8 @@ export function tileParent(t: Tile, k: number, n: number): Tile {
 
 export class TileHashReader {
   constructor(public size: number, public root: Uint8Array, public storage: TileReader) { }
-  ReadHashes(indexes: number[]) {
-    const h = this.storage.Height()
+  read_hashes(indexes: number[]) {
+    const h = this.storage.height()
     const tileOrder = {} as Record<string, number>
     const tiles = [] as Tile[]
     const stx = subTreeIndex(0, this.size, [])
@@ -456,7 +456,7 @@ export class TileHashReader {
     }
     // Fetch all the tile data.
 
-    const data = this.storage.ReadTiles(tiles)
+    const data = this.storage.read_tiles(tiles)
     if (data.length != tiles.length) {
       throw new Error(`TileReader returned bad result slice (len=%d, want %d)`)
     }
@@ -496,7 +496,7 @@ export class TileHashReader {
       }
     }
 
-    this.storage.SaveTiles(tiles, data)
+    this.storage.save_tiles(tiles, data)
     // pull out requested hashes
     const hashes = new Array(indexes.length).fill(new Uint8Array())
     for (let i = 0; i < indexes.length; i++) {
@@ -575,9 +575,9 @@ export function ProveTree(t: number, n: number, h: HashReader) {
   if (indexes.length === 0) {
     return []
   }
-  let hashes = h.ReadHashes(indexes)
+  let hashes = h.read_hashes(indexes)
   if (hashes.length != indexes.length) {
-    throw new Error(`tlog: ReadHashes(%d indexes) = %d hashes`)
+    throw new Error(`tlog: read_hashes(%d indexes) = %d hashes`)
   }
   let p
   [p, hashes] = treeProof(0, t, n, hashes)
