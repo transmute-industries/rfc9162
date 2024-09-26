@@ -2,12 +2,12 @@ import crypto from 'crypto'
 import {
   Hash, Tree,
   NewTiles,
-  ReadTileData,
-  StoredHashes,
+  read_tile_data,
+  stored_hashes,
   Tile, tile_to_path,
   TileReader as TR,
   TileHashReader,
-  StoredHashIndex,
+  stored_hash_index,
   tree_hash,
   HashReader,
   stored_hash_count
@@ -26,7 +26,7 @@ const encoder = new TextEncoder();
 class HashStorage {
   constructor(public hashes: Uint8Array[]) { }
   writeData(index: number, data: Uint8Array,) {
-    const hashes = StoredHashes(index, data, this)
+    const hashes = stored_hashes(index, data, this)
     let storageId = stored_hash_count(index)
     for (const hash of hashes) {
       // console.log(storageId, Buffer.from(hash).toString('hex'))
@@ -50,7 +50,7 @@ class TileReader implements TR {
   height() { return testH }  // testHeight
   writeTileData(oldTreeSize: number, newTreeSize: number,) {
     for (const tile of NewTiles(testH, oldTreeSize, newTreeSize)) {
-      const data = ReadTileData(tile, this.hashReader)
+      const data = read_tile_data(tile, this.hashReader)
       // console.log(tile_to_path(tile), Buffer.from(data).toString('hex'))
       this.tiles[tile_to_path(tile)] = data
     }
@@ -71,7 +71,7 @@ class TileReader implements TR {
     // fake persist on client.
     this.unsaved -= tiles.length
     for (const tile of tiles) {
-      const data = ReadTileData(tile, this.hashReader)
+      const data = read_tile_data(tile, this.hashReader)
       this.tiles[tile_to_path(tile)] = data
     }
   }
@@ -113,14 +113,14 @@ it('simulated interface', async () => {
   expect(Buffer.from(root1).toString('base64')).toBe('eMR1/fvh2IykZmA/Q7o3SypidfJRgnhWN5SPTPSeNeE=')
   const thr = new TileHashReader(entries.length, root1, tileReader)
 
-  const [h0] = thr.read_hashes([StoredHashIndex(0, 7)])
+  const [h0] = thr.read_hashes([stored_hash_index(0, 7)])
   expect(Buffer.from(h0).toString('base64')).toEqual(oldTreeEncoded[7])
 
-  const [h1] = thr.read_hashes([StoredHashIndex(1, 0)]) // first hash of level 1 is 
+  const [h1] = thr.read_hashes([stored_hash_index(1, 0)]) // first hash of level 1 is 
   const h1p = await treeHead(entries.slice(0, 2)) // ...mth of first 2 elements of level 0
   expect(Buffer.from(h1).toString('base64')).toEqual(Buffer.from(h1p).toString('base64'))
 
-  const [h2] = thr.read_hashes([StoredHashIndex(2, 0)]) // first hash of level 2 is 
+  const [h2] = thr.read_hashes([stored_hash_index(2, 0)]) // first hash of level 2 is 
   const h2p = await treeHead(entries.slice(0, 4)) // ...mth of first 4 elements of level 0
   expect(Buffer.from(h2).toString('base64')).toEqual(Buffer.from(h2p).toString('base64'))
 
@@ -139,7 +139,7 @@ it('simulated interface', async () => {
 
   // read all leaves from tiles
   for (let i = 0; i < entries.length; i++) {
-    const [h] = thr.read_hashes([StoredHashIndex(0, i)])
+    const [h] = thr.read_hashes([stored_hash_index(0, i)])
     expect(Buffer.from(h).toString('base64')).toEqual(oldTreeEncoded[i])
   }
 

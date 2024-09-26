@@ -5,17 +5,17 @@ import {
   Hash, Tree, Concat, toHex,
   PrettyHash, NewTiles,
   PrettyHashes,
-  ReadTileData, stored_hash_count,
-  StoredHashes, StoredHashIndex,
+  read_tile_data, stored_hash_count,
+  stored_hashes, stored_hash_index,
   record_hash, tree_hash,
   Tile, tile_to_path, HashSize,
   TileBytesAreEqual,
-  ProveRecord,
-  CheckRecord,
+  prove_record,
+  check_record,
   TileReader,
   TileHashReader,
-  ProveTree,
-  CheckTree
+  prove_tree,
+  check_tree
 } from "../../src";
 
 it('tile_for_storage_id', () => {
@@ -104,11 +104,11 @@ it('NewTiles', () => {
   expect(NewTiles(2, 1, 2)).toEqual([[2, 0, 0, 2]])
 })
 
-it('StoredHashIndex', () => {
-  expect(StoredHashIndex(0, 2)).toEqual(3)
-  expect(StoredHashIndex(0, 3)).toEqual(4)
-  expect(StoredHashIndex(0, 4)).toEqual(7)
-  expect(StoredHashIndex(0, 5)).toEqual(8)
+it('stored_hash_index', () => {
+  expect(stored_hash_index(0, 2)).toEqual(3)
+  expect(stored_hash_index(0, 3)).toEqual(4)
+  expect(stored_hash_index(0, 4)).toEqual(7)
+  expect(stored_hash_index(0, 5)).toEqual(8)
 })
 describe('TestTiledTree', () => {
   const encoder = new TextEncoder();
@@ -127,7 +127,7 @@ describe('TestTiledTree', () => {
       const data = encoder.encode(`leaf ${i}`)
       leafHashes.push(record_hash(data))
       const oldStorage = storedHashes.length
-      const hashes = StoredHashes(i, data, storage)
+      const hashes = stored_hashes(i, data, storage)
 
 
       storedHashes = [...storedHashes, ...hashes]
@@ -155,7 +155,7 @@ describe('TestTiledTree', () => {
       }
 
       for (const tile of NewTiles(testH, i, i + 1)) {
-        const data = ReadTileData(tile, storage)
+        const data = read_tile_data(tile, storage)
         const old = Tile(tile[0], tile[1], tile[2], tile[3] - 1)
         const oldData = tiles[tile_to_path(old)] || new Uint8Array()
         if ((oldData.length != (data.length - HashSize)) || !TileBytesAreEqual(oldData, data.slice(0, oldData.length))) {
@@ -164,13 +164,13 @@ describe('TestTiledTree', () => {
         tiles[tile_to_path(tile)] = data
       }
       for (const tile of NewTiles(testH, 0, i + 1)) {
-        const data = ReadTileData(tile, storage)
+        const data = read_tile_data(tile, storage)
         if (!TileBytesAreEqual(tiles[tile_to_path(tile)], data)) {
           throw new Error(`mismatch at ${tile}`)
         }
       }
       for (const tile of NewTiles(testH, i / 2, i + 1)) {
-        const data = ReadTileData(tile, storage)
+        const data = read_tile_data(tile, storage)
         if (!TileBytesAreEqual(tiles[tile_to_path(tile)], data)) {
           throw new Error(`mismatch at ${tile}`)
         }
@@ -191,14 +191,14 @@ describe('TestTiledTree', () => {
       trees.push(th)
 
       for (let j = 0; j <= i; j++) {
-        const p = ProveRecord(i + 1, j, storage)
-        if (!CheckRecord(p, i + 1, th, j, leafHashes[j])) {
-          throw new Error(`CheckRecord(${i + 1}, ${j}) failed`)
+        const p = prove_record(i + 1, j, storage)
+        if (!check_record(p, i + 1, th, j, leafHashes[j])) {
+          throw new Error(`check_record(${i + 1}, ${j}) failed`)
         }
         for (let k = 0; k < p.length; k++) {
           p[k][0] ^= 1 // break it
-          if (CheckRecord(p, i + 1, th, j, leafHashes[j])) {
-            throw new Error(`CheckRecord(${i + 1}, ${j}) succeeded with corrupt proof hash #${k}!`)
+          if (check_record(p, i + 1, th, j, leafHashes[j])) {
+            throw new Error(`check_record(${i + 1}, ${j}) succeeded with corrupt proof hash #${k}!`)
           }
           p[k][0] ^= 1 // fix it
         }
@@ -209,16 +209,16 @@ describe('TestTiledTree', () => {
       const tileStorage = new TestTileStorage(tiles)
       const thr = new TileHashReader(i + 1, th, tileStorage)
       for (let j = 0; j <= i; j++) {
-        const h = thr.read_hashes([StoredHashIndex(0, j)])
+        const h = thr.read_hashes([stored_hash_index(0, j)])
         if (toHex(h[0]) != toHex(leafHashes[j])) {
           throw new Error(`TileHashReader(%d).read_hashes(%d) returned wrong hash`)
         }
 
         // Even though reading the hash suffices,
         // check we can generate the proof too.
-        const p = ProveRecord(i + 1, j, thr)
-        if (!CheckRecord(p, i + 1, th, j, leafHashes[j])) {
-          throw new Error(`CheckRecord(%d, %d, TileHashReader(%d)): %v`)
+        const p = prove_record(i + 1, j, thr)
+        if (!check_record(p, i + 1, th, j, leafHashes[j])) {
+          throw new Error(`check_record(%d, %d, TileHashReader(%d)): %v`)
         }
       }
       if (tileStorage.unsaved != 0) {
@@ -241,16 +241,16 @@ describe('TestTiledTree', () => {
 
         // Even though computing the subtree hash suffices,
         // check that we can generate the proof too.
-        const p = ProveTree(i + 1, j + 1, thr)
-        const ct = CheckTree(p, i + 1, th, j + 1, trees[j])
+        const p = prove_tree(i + 1, j + 1, thr)
+        const ct = check_tree(p, i + 1, th, j + 1, trees[j])
         if (!ct) {
-          throw new Error(`"CheckTree(%d, %d): %v [%v]`)
+          throw new Error(`"check_tree(%d, %d): %v [%v]`)
         }
 
         for (let k = 0; k < p.length; k++) {
           p[k][0] ^= 1 // break
           try {
-            CheckTree(p, i + 1, th, j + 1, trees[j]) // test
+            check_tree(p, i + 1, th, j + 1, trees[j]) // test
           } catch (e) {
             expect((e as any).message).toBe('errProofFailed')
           }

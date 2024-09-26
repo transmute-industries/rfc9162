@@ -20,7 +20,7 @@ export function Tile(h: number, l: number, n: number, w: number) {
   return [h, l, n, w] as Tile
 }
 
-export function StoredHashIndex(level: number, n: number) {
+export function stored_hash_index(level: number, n: number) {
   for (let l = level; l > 0; l--) {
     n = 2 * n + 1
   }
@@ -34,7 +34,7 @@ export function StoredHashIndex(level: number, n: number) {
 
 export function SplitStoredHashIndex(index: number) {
   let n = Math.ceil(index / 2)
-  let indexN = StoredHashIndex(0, n)
+  let indexN = stored_hash_index(0, n)
   indexN = Math.ceil(indexN)
   if (indexN > index) {
     throw new Error('bad math')
@@ -148,7 +148,7 @@ export interface HashReader {
   read_hashes: (indexes: number[]) => Uint8Array[]
 }
 
-export function ReadTileData(t: Tile, r: HashReader) {
+export function read_tile_data(t: Tile, r: HashReader) {
   let size = t[3]
   if (size === 0) {
     size = 1 << t[0]
@@ -156,7 +156,7 @@ export function ReadTileData(t: Tile, r: HashReader) {
   const start = t[2] << t[0]
   const indexes = []
   for (let i = 0; i < size; i++) {
-    indexes[i] = StoredHashIndex(t[0] * t[1], start + i)
+    indexes[i] = stored_hash_index(t[0] * t[1], start + i)
   }
   const hashes = r.read_hashes(indexes)
   if (hashes.length != indexes.length) {
@@ -170,7 +170,7 @@ export function stored_hash_count(n: number) {
   if (n === 0) {
     return 0
   }
-  let numHash = StoredHashIndex(0, n - 1) + 1
+  let numHash = stored_hash_index(0, n - 1) + 1
   for (let i = n - 1; (i & 1) != 0; i >>= 1) {
     numHash++
   }
@@ -183,7 +183,7 @@ export function stored_hashes_for_record_hash(n: number, h: Uint8Array, r: HashR
   const indexes = new Array(m).fill(0)
   for (let i = 0; i < m; i++) {
     const next = (n >> i) - 1
-    indexes[m - 1 - i] = StoredHashIndex(i, next)
+    indexes[m - 1 - i] = stored_hash_index(i, next)
   }
   const old = r.read_hashes(indexes)
   for (let i = 0; i < m; i++) {
@@ -197,7 +197,7 @@ export function record_hash(data: Uint8Array) {
   return th.hashLeaf(data)
 }
 
-export function StoredHashes(n: number, data: Uint8Array, r: HashReader) {
+export function stored_hashes(n: number, data: Uint8Array, r: HashReader) {
   return stored_hashes_for_record_hash(n, record_hash(data), r)
 }
 
@@ -220,7 +220,7 @@ export function subTreeIndex(lo: number, hi: number, need: number[]) {
     if ((lo & (k - 1)) != 0) {
       throw new Error(`tlog: bad math in subTreeIndex`)
     }
-    need.push(StoredHashIndex(level, lo >> level))
+    need.push(stored_hash_index(level, lo >> level))
     lo += k
   }
   return need
@@ -313,9 +313,9 @@ export function leafProof(lo: number, hi: number, n: number, hashes: Uint8Array[
 
 export type RecordProof = Uint8Array[]
 
-export function ProveRecord(t: number, n: number, r: HashReader) {
+export function prove_record(t: number, n: number, r: HashReader) {
   if (t < 0 || n < 0 || n >= t) {
-    throw new Error('tlog: invalid inputs in ProveRecord')
+    throw new Error('tlog: invalid inputs in prove_record')
   }
   const indexes = leafProofIndex(0, t, n, [])
   if (indexes.length === 0) {
@@ -328,7 +328,7 @@ export function ProveRecord(t: number, n: number, r: HashReader) {
   let p;
   [p, hashes] = leafProof(0, t, n, hashes)
   if (hashes.length != 0) {
-    throw new Error(`tlog: bad index math in ProveRecord`)
+    throw new Error(`tlog: bad index math in prove_record`)
   }
   return p
 }
@@ -359,9 +359,9 @@ export function runRecordProof(p: RecordProof, lo: number, hi: number, n: number
 
 }
 
-export function CheckRecord(p: RecordProof, t: number, th: Uint8Array, n: number, h: Uint8Array) {
+export function check_record(p: RecordProof, t: number, th: Uint8Array, n: number, h: Uint8Array) {
   if (t < 0 || n < 0 || n >= t) {
-    throw new Error(`tlog: invalid inputs in CheckRecord`)
+    throw new Error(`tlog: invalid inputs in check_record`)
   }
   const th2 = runRecordProof(p, 0, t, n, h)
   return toHex(th2) === toHex(th)
@@ -417,7 +417,7 @@ export class TileHashReader {
     const indexTileOrder = new Array(indexes.length).fill(0)
     for (let i = 0; i < indexes.length; i++) {
       const x = indexes[i]
-      if (x >= StoredHashIndex(0, this.size)) {
+      if (x >= stored_hash_index(0, this.size)) {
         throw new Error(`indexes not in tree`)
       }
 
@@ -490,7 +490,7 @@ export class TileHashReader {
       if (j === undefined) {
         throw new Error(`bad math in tileHashReader %d %v: lost parent of %v`)
       }
-      const h = hash_from_tile(p, data[j], StoredHashIndex(p[1] * p[0], tile[2]))
+      const h = hash_from_tile(p, data[j], stored_hash_index(p[1] * p[0], tile[2]))
       if (toHex(h) != toHex(tileHash(data[i]))) {
         throw new Error(`downloaded inconsistent tile 2`)
       }
@@ -567,9 +567,9 @@ export function treeProof(lo: number, hi: number, n: number, hashes: Uint8Array[
 
 }
 
-export function ProveTree(t: number, n: number, h: HashReader) {
+export function prove_tree(t: number, n: number, h: HashReader) {
   if (t < 1 || n < 1 || n > t) {
-    throw new Error(`tlog: invalid inputs in ProveTree`)
+    throw new Error(`tlog: invalid inputs in prove_tree`)
   }
   const indexes = treeProofIndex(0, t, n, [])
   if (indexes.length === 0) {
@@ -582,7 +582,7 @@ export function ProveTree(t: number, n: number, h: HashReader) {
   let p
   [p, hashes] = treeProof(0, t, n, hashes)
   if (hashes.length != 0) {
-    throw new Error(`tlog: bad index math in ProveTree`)
+    throw new Error(`tlog: bad index math in prove_tree`)
   }
   return p
 }
@@ -619,9 +619,9 @@ export function runTreeProof(p: Uint8Array[], lo: number, hi: number, n: number,
 
 }
 
-export function CheckTree(p: Uint8Array[], t: number, th: Uint8Array, n: number, h: Uint8Array) {
+export function check_tree(p: Uint8Array[], t: number, th: Uint8Array, n: number, h: Uint8Array) {
   if (t < 1 || n < 1 || n > t) {
-    throw new Error(`tlog: invalid inputs in CheckTree`)
+    throw new Error(`tlog: invalid inputs in check_tree`)
   }
 
   const [h2, th2] = runTreeProof(p, 0, t, n, h)

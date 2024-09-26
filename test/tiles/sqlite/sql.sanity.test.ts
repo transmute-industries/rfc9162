@@ -1,18 +1,18 @@
 
 import sqlite from 'better-sqlite3'
 import {
-  StoredHashes,
+  stored_hashes,
   TileReader,
-  ReadTileData,
+  read_tile_data,
   Tile,
   tree_hash,
   TileHashReader,
-  ProveRecord,
+  prove_record,
   record_hash,
-  CheckRecord,
-  ProveTree,
-  StoredHashIndex,
-  CheckTree
+  check_record,
+  prove_tree,
+  stored_hash_index,
+  check_tree
 } from "../../../src";
 
 const prepare = (db: any) => {
@@ -86,7 +86,7 @@ const encoder = new TextEncoder();
 class SQLHashStorage {
   constructor(public db: any) { }
   writeData(index: number, data: Uint8Array,) {
-    const hashes = StoredHashes(index, data, this)
+    const hashes = stored_hashes(index, data, this)
     write_hashes(this.db, hashes)
   }
   read_hashes(indexes: number[]) {
@@ -110,7 +110,7 @@ class SQLTileReader implements TileReader {
     const out = [] as any
     for (let i = 0; i < tiles.length; i++) {
       const tile = tiles[i]
-      const data = ReadTileData(tile, this.hashReader)
+      const data = read_tile_data(tile, this.hashReader)
       out.push(data)
     }
     this.unsaved += tiles.length
@@ -138,7 +138,7 @@ it('synchronous apis', async () => {
   prepare(db)
   const root = tree_hash(26, hashReader)
   const thr = new TileHashReader(26, root, tileReader)
-  const storageID = StoredHashIndex(0, 17)
+  const storageID = stored_hash_index(0, 17)
   const leaf = record_hash(encoder.encode(`entry-17`))
   const h0 = find_index_for_hash(db, leaf) as any
   expect(h0?.id).toBe(storageID)
@@ -147,16 +147,16 @@ it('synchronous apis', async () => {
 
   const treeSize = 26
   const leafIndex = 17
-  const inclusionPath = ProveRecord(treeSize, leafIndex, thr)
-  const inclusionProof = CheckRecord(inclusionPath, treeSize, root, leafIndex, leaf)
+  const inclusionPath = prove_record(treeSize, leafIndex, thr)
+  const inclusionProof = check_record(inclusionPath, treeSize, root, leafIndex, leaf)
   expect(inclusionProof).toBe(true)
 
   const oldSize = 17
   const newSize = 26
   const oldRoot = tree_hash(17, hashReader)
   const newRoot = tree_hash(26, hashReader)
-  const consistencyPath = ProveTree(newSize, oldSize, thr)
-  const c = CheckTree(consistencyPath, newSize, newRoot, oldSize, oldRoot)
+  const consistencyPath = prove_tree(newSize, oldSize, thr)
+  const c = check_tree(consistencyPath, newSize, newRoot, oldSize, oldRoot)
   expect(c).toBe(true)
 
 })
