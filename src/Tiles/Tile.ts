@@ -87,7 +87,7 @@ function NodeHash(left: Uint8Array, right: Uint8Array) {
   return th.hash(Concat(IntermediatePrefix, Concat(left, right)))
 }
 
-export function HashFromTile(t: Tile, data: Uint8Array, storageID: number) {
+export function hash_from_tile(t: Tile, data: Uint8Array, storageID: number) {
   const [tH, tL, tN, tW] = t
   if (tH < 1 || tH > 30 || tL < 0 || tL >= 64 || tW < 1 || tW > (1 << tH)) {
     throw new Error(`invalid ${tile_to_path(t)}`)
@@ -166,7 +166,7 @@ export function ReadTileData(t: Tile, r: HashReader) {
   return tileData
 }
 
-export function StoredHashCount(n: number) {
+export function stored_hash_count(n: number) {
   if (n === 0) {
     return 0
   }
@@ -177,7 +177,7 @@ export function StoredHashCount(n: number) {
   return numHash
 }
 
-export function StoredHashesForRecordHash(n: number, h: Uint8Array, r: HashReader) {
+export function stored_hashes_for_record_hash(n: number, h: Uint8Array, r: HashReader) {
   const hashes = [h] as Uint8Array[]
   const m = TrailingZeros64(n + 1)
   const indexes = new Array(m).fill(0)
@@ -193,12 +193,12 @@ export function StoredHashesForRecordHash(n: number, h: Uint8Array, r: HashReade
   return hashes
 }
 
-export function RecordHash(data: Uint8Array) {
+export function record_hash(data: Uint8Array) {
   return th.hashLeaf(data)
 }
 
 export function StoredHashes(n: number, data: Uint8Array, r: HashReader) {
-  return StoredHashesForRecordHash(n, RecordHash(data), r)
+  return stored_hashes_for_record_hash(n, record_hash(data), r)
 }
 
 
@@ -247,7 +247,7 @@ export function subTreeHash(lo: number, hi: number, hashes: Uint8Array[]): [Uint
 }
 
 
-export function TreeHash(n: number, r: HashReader) {
+export function tree_hash(n: number, r: HashReader) {
   if (n === 0) {
     return th.emptyRoot()
   }
@@ -258,7 +258,7 @@ export function TreeHash(n: number, r: HashReader) {
   hash = sth[0]
   hashes = sth[1]
   if (hashes.length !== 0) {
-    throw new Error(`tlog: bad index math in TreeHash`)
+    throw new Error(`tlog: bad index math in tree_hash`)
   }
   return hash
 }
@@ -473,9 +473,9 @@ export class TileHashReader {
     // They are arranged so that parents are authenticated before children.
     // First the tiles needed for the tree hash.
 
-    let th = HashFromTile(tiles[stxTileOrder[stx.length - 1]], data[stxTileOrder[stx.length - 1]], stx[stx.length - 1])
+    let th = hash_from_tile(tiles[stxTileOrder[stx.length - 1]], data[stxTileOrder[stx.length - 1]], stx[stx.length - 1])
     for (let i = stx.length - 2; i >= 0; i--) {
-      const h = HashFromTile(tiles[stxTileOrder[i]], data[stxTileOrder[i]], stx[i])
+      const h = hash_from_tile(tiles[stxTileOrder[i]], data[stxTileOrder[i]], stx[i])
       th = NodeHash(h, th)
     }
     if (toHex(th) != toHex(this.root)) {
@@ -490,7 +490,7 @@ export class TileHashReader {
       if (j === undefined) {
         throw new Error(`bad math in tileHashReader %d %v: lost parent of %v`)
       }
-      const h = HashFromTile(p, data[j], StoredHashIndex(p[1] * p[0], tile[2]))
+      const h = hash_from_tile(p, data[j], StoredHashIndex(p[1] * p[0], tile[2]))
       if (toHex(h) != toHex(tileHash(data[i]))) {
         throw new Error(`downloaded inconsistent tile 2`)
       }
@@ -502,7 +502,7 @@ export class TileHashReader {
     for (let i = 0; i < indexes.length; i++) {
       const x = indexes[i]
       const j = indexTileOrder[i]
-      const h = HashFromTile(tiles[j], data[j], x)
+      const h = hash_from_tile(tiles[j], data[j], x)
       hashes[i] = h
     }
     return hashes

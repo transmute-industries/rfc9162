@@ -8,9 +8,9 @@ import {
   TileReader as TR,
   TileHashReader,
   StoredHashIndex,
-  TreeHash,
+  tree_hash,
   HashReader,
-  StoredHashCount
+  stored_hash_count
 } from "../../src";
 
 import { treeHead } from '../../src/RFC9162';
@@ -27,7 +27,7 @@ class HashStorage {
   constructor(public hashes: Uint8Array[]) { }
   writeData(index: number, data: Uint8Array,) {
     const hashes = StoredHashes(index, data, this)
-    let storageId = StoredHashCount(index)
+    let storageId = stored_hash_count(index)
     for (const hash of hashes) {
       // console.log(storageId, Buffer.from(hash).toString('hex'))
       this.hashes[storageId++] = hash
@@ -125,16 +125,16 @@ it('simulated interface', async () => {
   expect(Buffer.from(h2).toString('base64')).toEqual(Buffer.from(h2p).toString('base64'))
 
   // check heads with tile hash reader
-  expect(Buffer.from(TreeHash(5, thr)).toString('base64'))
+  expect(Buffer.from(tree_hash(5, thr)).toString('base64'))
     .toEqual(Buffer.from(await treeHead(entries.slice(0, 5))).toString('base64'))
 
-  expect(Buffer.from(TreeHash(7, thr)).toString('base64'))
+  expect(Buffer.from(tree_hash(7, thr)).toString('base64'))
     .toEqual(Buffer.from(await treeHead(entries.slice(0, 7))).toString('base64'))
 
-  expect(Buffer.from(TreeHash(8, thr)).toString('base64'))
+  expect(Buffer.from(tree_hash(8, thr)).toString('base64'))
     .toEqual(Buffer.from(await treeHead(entries.slice(0, 8))).toString('base64'))
 
-  expect(Buffer.from(TreeHash(26, thr)).toString('base64'))
+  expect(Buffer.from(tree_hash(26, thr)).toString('base64'))
     .toEqual(Buffer.from(await treeHead(entries.slice(0, 26))).toString('base64'))
 
   // read all leaves from tiles

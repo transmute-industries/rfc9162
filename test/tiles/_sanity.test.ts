@@ -5,6 +5,7 @@ import { tile_for_storage_id, tile_to_path } from '../../src/Tiles/Tile';
 
 const global_tiles = {} as Record<string, Uint8Array>
 
+const tile_height = 2
 const hash_size = 32
 
 const encoder = new TextEncoder()
@@ -48,7 +49,7 @@ const maybe_grow_tile = (storageId: number, hash: Uint8Array) => {
 
 
 it('only persist tiles', async () => {
-  const log = new TileLog(hash_function, hash_size, read_tile, maybe_grow_tile)
+  const log = new TileLog(tile_height, hash_size, hash_function, read_tile, maybe_grow_tile)
   const entries = [] as Uint8Array[]
   const root1 = Buffer.from(await treeHead(entries)).toString('base64')
   const root2 = log.root()

@@ -1,13 +1,13 @@
 import crypto from 'crypto'
 import {
   tile_for_storage_id,
-  HashFromTile,
+  hash_from_tile,
   Hash, Tree, Concat, toHex,
   PrettyHash, NewTiles,
   PrettyHashes,
-  ReadTileData, StoredHashCount,
+  ReadTileData, stored_hash_count,
   StoredHashes, StoredHashIndex,
-  RecordHash, TreeHash,
+  record_hash, tree_hash,
   Tile, tile_to_path, HashSize,
   TileBytesAreEqual,
   ProveRecord,
@@ -27,7 +27,7 @@ it('tile_for_storage_id', () => {
 })
 
 
-describe('HashFromTile', () => {
+describe('hash_from_tile', () => {
   const th = new Hash((data: Uint8Array) => {
     return new Uint8Array(crypto.createHash('sha256').update(data).digest());
   }, 32)
@@ -42,7 +42,7 @@ describe('HashFromTile', () => {
     const [tile] = tile_for_storage_id(2, index)
     expect(
       toHex(
-        HashFromTile(tile, rawData, index)
+        hash_from_tile(tile, rawData, index)
       ))
       .toBe(
         Buffer.from('QHZrIDNCkCb1PVRQJnmoOXBrR0H43K86i7pfQbX/4HU=', 'base64').toString('hex')
@@ -53,7 +53,7 @@ describe('HashFromTile', () => {
     const [tile,] = tile_for_storage_id(2, index)
     expect(
       toHex(
-        HashFromTile(tile, rawData, index)
+        hash_from_tile(tile, rawData, index)
       ))
       .toBe(
         Buffer.from('6GiBGkgsJ9ULbUXd55xGXWrbmwZkUQBHepDPPYUYiYs=', 'base64').toString('hex')
@@ -65,7 +65,7 @@ describe('HashFromTile', () => {
     const [tile] = tile_for_storage_id(2, index)
     expect(
       toHex(
-        HashFromTile(tile, rawData, index)
+        hash_from_tile(tile, rawData, index)
       ))
       .toBe(
         Buffer.from('LyelCCwdQq+kiKw1Cp/EOQwIT1T3Hs3/hZ6Y24QptHk=', 'base64').toString('hex')
@@ -77,7 +77,7 @@ describe('HashFromTile', () => {
     const [tile] = tile_for_storage_id(2, index)
     expect(
       toHex(
-        HashFromTile(tile, rawData, index)
+        hash_from_tile(tile, rawData, index)
       ))
       .toBe(
         Buffer.from('BJ19zbVrz+vTEzBMmDnxlqPUtu873AsIKY+TrIGR8Kg=', 'base64').toString('hex')
@@ -89,7 +89,7 @@ describe('HashFromTile', () => {
     const [tile] = tile_for_storage_id(2, index)
     expect(
       toHex(
-        HashFromTile(tile, rawData, index)
+        hash_from_tile(tile, rawData, index)
       ))
       .toBe(
         Buffer.from('J0ebarMh0u5HdFL2i6UndI6GPK/o+9HfK/idFXDRtpc=', 'base64').toString('hex')
@@ -125,7 +125,7 @@ describe('TestTiledTree', () => {
     }
     for (let i = 0; i < 100; i++) {
       const data = encoder.encode(`leaf ${i}`)
-      leafHashes.push(RecordHash(data))
+      leafHashes.push(record_hash(data))
       const oldStorage = storedHashes.length
       const hashes = StoredHashes(i, data, storage)
 
@@ -133,11 +133,11 @@ describe('TestTiledTree', () => {
       storedHashes = [...storedHashes, ...hashes]
 
 
-      if (StoredHashCount(i + 1) != storedHashes.length) {
+      if (stored_hash_count(i + 1) != storedHashes.length) {
         throw new Error('Storage is more clever: ')
       }
 
-      const th = TreeHash(i + 1, storage)
+      const th = tree_hash(i + 1, storage)
       if (i == 0) {
         expect(PrettyHash(th)).toBe("G7l9zCFjXUfiZj79/QoXRobZjdcBNS3SzQbotD/T0wU=")
       }
@@ -182,9 +182,9 @@ describe('TestTiledTree', () => {
         if (!data) {
           throw new Error(`tile_for_storage_id(${testH}, ${j}) = ${tile_to_path(tile)}, not yet stored (i=${i}, stored ${storedHashes.length})`)
         }
-        const h = HashFromTile(tile, data, j)
+        const h = hash_from_tile(tile, data, j)
         if (toHex(h) !== toHex(storedHashes[j])) {
-          throw new Error(`HashFromTile(${tile_to_path(tile)}, ${j}) = ${h}, want ${storedHashes[j]}`)
+          throw new Error(`hash_from_tile(${tile_to_path(tile)}, ${j}) = ${h}, want ${storedHashes[j]}`)
         }
       }
 
@@ -234,9 +234,9 @@ describe('TestTiledTree', () => {
         throw new Error(`TileHashReader(%d) did not save %d tiles`)
       }
       for (let j = 0; j <= i; j++) {
-        const h = TreeHash(j + 1, thr)
+        const h = tree_hash(j + 1, thr)
         if (toHex(h) != toHex(trees[j])) {
-          throw new Error(`"TreeHash(%d, TileHashReader(%d)) = %x, want %x (%v)`)
+          throw new Error(`"tree_hash(%d, TileHashReader(%d)) = %x, want %x (%v)`)
         }
 
         // Even though computing the subtree hash suffices,

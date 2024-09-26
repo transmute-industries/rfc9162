@@ -5,10 +5,10 @@ import {
   TileReader,
   ReadTileData,
   Tile,
-  TreeHash,
+  tree_hash,
   TileHashReader,
   ProveRecord,
-  RecordHash,
+  record_hash,
   CheckRecord,
   ProveTree,
   StoredHashIndex,
@@ -136,10 +136,10 @@ it('synchronous apis', async () => {
 
   const tileReader = new SQLTileReader(hashReader)
   prepare(db)
-  const root = TreeHash(26, hashReader)
+  const root = tree_hash(26, hashReader)
   const thr = new TileHashReader(26, root, tileReader)
   const storageID = StoredHashIndex(0, 17)
-  const leaf = RecordHash(encoder.encode(`entry-17`))
+  const leaf = record_hash(encoder.encode(`entry-17`))
   const h0 = find_index_for_hash(db, leaf) as any
   expect(h0?.id).toBe(storageID)
   const hash = get_stored_hash_by_index(db, storageID)
@@ -153,8 +153,8 @@ it('synchronous apis', async () => {
 
   const oldSize = 17
   const newSize = 26
-  const oldRoot = TreeHash(17, hashReader)
-  const newRoot = TreeHash(26, hashReader)
+  const oldRoot = tree_hash(17, hashReader)
+  const newRoot = tree_hash(26, hashReader)
   const consistencyPath = ProveTree(newSize, oldSize, thr)
   const c = CheckTree(consistencyPath, newSize, newRoot, oldSize, oldRoot)
   expect(c).toBe(true)
