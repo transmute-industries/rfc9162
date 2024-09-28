@@ -1,7 +1,8 @@
-import { trailing_zeros_64 } from "./Node";
 
 
-export const hash_size = 32
+
+import { trailing_zeros_64 } from "./Tree"
+
 export const EmptyBuffer = new Uint8Array()
 export const LeafPrefix = new Uint8Array([0])
 export const intermediate_prefix = new Uint8Array([1])
@@ -22,7 +23,7 @@ export function to_hex(bytes: Uint8Array) {
 }
 
 export class TreeHash {
-  constructor(public hash: (data: Uint8Array) => Uint8Array, public hashSizeBytes: number) { }
+  constructor(public hash: (data: Uint8Array) => Uint8Array, public hash_size: number) { }
   empty_root() {
     return this.hash(EmptyBuffer)
   }
@@ -92,7 +93,7 @@ export function split_stored_hash_index(hash_index: number) {
   return [level, hash_number]
 }
 
-export function tile_for_storage_id(height: number, storage_id: number): [Tile, number, number] {
+export function tile_for_storage_id(hash_size: number, height: number, storage_id: number): [Tile, number, number] {
   if (height < 0) {
     throw new Error(`tile_for_storage_id: invalid height ${height}`)
   }
@@ -123,10 +124,10 @@ export function hash_from_tile(th: TreeHash, tile: Tile, data: Uint8Array, stora
   if (tile_height < 1 || tile_height > 30 || tile_level < 0 || tile_level >= 64 || tile_width < 1 || tile_width > (1 << tile_height)) {
     throw new Error(`invalid ${tile_to_path(tile)}`)
   }
-  if (data.length < tile_width * hash_size) {
+  if (data.length < tile_width * th.hash_size) {
     throw new Error(`data length ${data.length} is too short for ${tile_to_path(tile)}`)
   }
-  const [t1, start, end] = tile_for_storage_id(tile_height, storage_id)
+  const [t1, start, end] = tile_for_storage_id(th.hash_size, tile_height, storage_id)
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_t1H, t1L, t1N, t1W] = t1
   if (tile_level !== t1L || hash_number !== t1N || tile_width < t1W) {
@@ -140,7 +141,7 @@ export function tile_hash(th: TreeHash, data: Uint8Array): Uint8Array {
   if (data.length == 0) {
     throw new Error("bad math in tile_hash")
   }
-  if (data.length === hash_size) {
+  if (data.length === th.hash_size) {
     return data
   }
   const n = data.length / 2
@@ -590,7 +591,7 @@ export class TileHashReader implements HashReader {
     const stxTileOrder = new Array(stx.length).fill(0)
     for (let i = 0; i < stx.length; i++) {
       const x = stx[i]
-      let [tile] = tile_for_storage_id(height, x)
+      let [tile] = tile_for_storage_id(this.th.hash_size, height, x)
       tile = tile_parent(tile, 0, this.size)
       if (tileOrder[tile_to_path(tile)]) {
         stxTileOrder[i] = tileOrder[tile_to_path(tile)]
@@ -613,7 +614,7 @@ export class TileHashReader implements HashReader {
         throw new Error(`indexes not in tree`)
       }
 
-      const [tile] = tile_for_storage_id(height, x)
+      const [tile] = tile_for_storage_id(this.th.hash_size, height, x)
       let k = 0;
       for (; ; k++) {
         const p = tile_parent(tile, k, this.size)
@@ -665,12 +666,12 @@ export class TileHashReader implements HashReader {
     // They are arranged so that parents are authenticated before children.
     // First the tiles needed for the tree hash.
 
-    let th = hash_from_tile(this.th, tiles[stxTileOrder[stx.length - 1]], data[stxTileOrder[stx.length - 1]], stx[stx.length - 1])
+    let next_hash = hash_from_tile(this.th, tiles[stxTileOrder[stx.length - 1]], data[stxTileOrder[stx.length - 1]], stx[stx.length - 1])
     for (let i = stx.length - 2; i >= 0; i--) {
       const h = hash_from_tile(this.th, tiles[stxTileOrder[i]], data[stxTileOrder[i]], stx[i])
-      th = node_hash(this.th, h, th)
+      next_hash = node_hash(this.th, h, next_hash)
     }
-    if (to_hex(th) != to_hex(this.root)) {
+    if (to_hex(next_hash) != to_hex(this.root)) {
       throw new Error(`downloaded inconsistent tile`)
     }
 
@@ -764,7 +765,7 @@ export class TileLog implements TileStorage, HashReader {
   }
   read_hashes(storage_ids: number[]) {
     return storage_ids.map((storage_id) => {
-      const [tile] = tile_for_storage_id(2, storage_id)
+      const [tile] = tile_for_storage_id(this.th.hash_size, 2, storage_id)
       const tileData = this.read_tile(tile_to_path(tile))
       const hash = hash_from_tile(this.th, tile, tileData, storage_id)
       return hash

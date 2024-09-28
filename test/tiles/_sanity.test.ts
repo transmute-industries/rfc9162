@@ -75,11 +75,11 @@ it('tree hasher', () => {
 })
 
 it('tile_for_storage_id', () => {
-  expect(tile_for_storage_id(2, 0)).toEqual([[2, 0, 0, 1], 0, 32])
-  expect(tile_for_storage_id(2, 1)).toEqual([[2, 0, 0, 2], 32, 64])
-  expect(tile_for_storage_id(2, 2)).toEqual([[2, 0, 0, 2], 0, 64])
-  expect(tile_for_storage_id(2, 3)).toEqual([[2, 0, 0, 3], 64, 96])
-  expect(tile_for_storage_id(8, 9)).toEqual([[8, 0, 0, 6], 128, 192])
+  expect(tile_for_storage_id(th.hash_size, 2, 0)).toEqual([[2, 0, 0, 1], 0, 32])
+  expect(tile_for_storage_id(th.hash_size, 2, 1)).toEqual([[2, 0, 0, 2], 32, 64])
+  expect(tile_for_storage_id(th.hash_size, 2, 2)).toEqual([[2, 0, 0, 2], 0, 64])
+  expect(tile_for_storage_id(th.hash_size, 2, 3)).toEqual([[2, 0, 0, 3], 64, 96])
+  expect(tile_for_storage_id(th.hash_size, 8, 9)).toEqual([[8, 0, 0, 6], 128, 192])
 })
 
 

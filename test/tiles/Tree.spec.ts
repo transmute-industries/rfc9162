@@ -139,7 +139,7 @@ describe('hash_from_tile', () => {
   const rawData = tree.hashes[0].reduce(concat)
   it('first hash, from first tile', () => {
     const index = 0
-    const [tile] = tile_for_storage_id(2, index)
+    const [tile] = tile_for_storage_id(th.hash_size, 2, index)
     expect(
       to_hex(
         hash_from_tile(th, tile, rawData, index)
@@ -150,7 +150,7 @@ describe('hash_from_tile', () => {
   })
   it('second hash, from first tile', () => {
     const index = 1
-    const [tile,] = tile_for_storage_id(2, index)
+    const [tile,] = tile_for_storage_id(th.hash_size, 2, index)
     expect(
       to_hex(
         hash_from_tile(th, tile, rawData, index)
@@ -162,7 +162,7 @@ describe('hash_from_tile', () => {
   })
   it('third hash, from first tile', () => {
     const index = 2
-    const [tile] = tile_for_storage_id(2, index)
+    const [tile] = tile_for_storage_id(th.hash_size, 2, index)
     expect(
       to_hex(
         hash_from_tile(th, tile, rawData, index)
@@ -174,7 +174,7 @@ describe('hash_from_tile', () => {
 
   it('fourth hash, from first tile', () => {
     const index = 3
-    const [tile] = tile_for_storage_id(2, index)
+    const [tile] = tile_for_storage_id(th.hash_size, 2, index)
     expect(
       to_hex(
         hash_from_tile(th, tile, rawData, index)
@@ -186,7 +186,7 @@ describe('hash_from_tile', () => {
 
   it('fifth hash, from first tile', () => {
     const index = 4
-    const [tile] = tile_for_storage_id(2, index)
+    const [tile] = tile_for_storage_id(th.hash_size, 2, index)
     expect(
       to_hex(
         hash_from_tile(th, tile, rawData, index)

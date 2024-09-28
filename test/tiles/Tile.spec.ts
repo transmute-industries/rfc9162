@@ -8,7 +8,7 @@ import {
   read_tile_data, stored_hash_count,
   stored_hashes, stored_hash_index,
   record_hash, tree_hash,
-  tile_to_path, hash_size,
+  tile_to_path,
   tile_bytes_are_equal,
   prove_record,
   check_record,
@@ -66,7 +66,7 @@ describe('TestTiledTree', () => {
         const data = read_tile_data(tile, storage)
         const old = create_tile(tile[0], tile[1], tile[2], tile[3] - 1)
         const oldData = tiles[tile_to_path(old)] || new Uint8Array()
-        if ((oldData.length != (data.length - hash_size)) || !tile_bytes_are_equal(oldData, data.slice(0, oldData.length))) {
+        if ((oldData.length != (data.length - th.hash_size)) || !tile_bytes_are_equal(oldData, data.slice(0, oldData.length))) {
           throw new Error(`tile ${tile} not extending earlier tile ${old}`)
         }
         tiles[tile_to_path(tile)] = data
@@ -85,7 +85,7 @@ describe('TestTiledTree', () => {
       }
 
       for (let j = old_storage_length; j < all_tree_hashes_stored.length; j++) {
-        const [tile] = tile_for_storage_id(tile_height, j)
+        const [tile] = tile_for_storage_id(th.hash_size, tile_height, j)
         const data = tiles[tile_to_path(tile)]
         if (!data) {
           throw new Error(`tile_for_storage_id(${tile_height}, ${j}) = ${tile_to_path(tile)}, not yet stored (i=${i}, stored ${all_tree_hashes_stored.length})`)
