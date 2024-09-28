@@ -367,12 +367,22 @@ export function run_record_proof(p: RecordProof, lo: number, hi: number, n: numb
 
 }
 
-export function check_record(p: RecordProof, t: number, th: Uint8Array, n: number, h: Uint8Array) {
-  if (t < 0 || n < 0 || n >= t) {
-    throw new Error(`tlog: invalid inputs in check_record`)
+export function root_from_record_proof(record_proof: RecordProof, tree_size: number, record_index: number, record_hash: Uint8Array) {
+  if (tree_size < 0) {
+    throw new Error(`tlog: tree_size less than 0 in root_from_record_proof`)
   }
-  const th2 = run_record_proof(p, 0, t, n, h)
-  return to_hex(th2) === to_hex(th)
+  if (record_index < 0) {
+    throw new Error(`tlog: record_index less than 0 in root_from_record_proof`)
+  }
+  if (record_index >= tree_size) {
+    throw new Error(`tlog: record_index greater than or equal to tree_size in root_from_record_proof`)
+  }
+  return run_record_proof(record_proof, 0, tree_size, record_index, record_hash)
+}
+
+export function check_record(record_proof: RecordProof, record_index: number, tree_root: Uint8Array, tree_size: number, record_hash: Uint8Array) {
+  const reconstructed_root = root_from_record_proof(record_proof, record_index, tree_size, record_hash)
+  return to_hex(reconstructed_root) === to_hex(tree_root)
 }
 
 export function tile_parent(t: Tile, k: number, n: number): Tile {
@@ -621,15 +631,147 @@ export function run_tree_proof(p: Uint8Array[], lo: number, hi: number, n: numbe
 
 }
 
-export function check_tree(p: Uint8Array[], t: number, th: Uint8Array, n: number, h: Uint8Array) {
-  if (t < 1 || n < 1 || n > t) {
+export function new_tree_root_from_tree_proof(tree_proof: Uint8Array[], new_tree_size: number, old_tree_size: number, old_tree_root: Uint8Array) {
+  if (old_tree_size < 1 || new_tree_size < 1 || old_tree_size > new_tree_size) {
     throw new Error(`tlog: invalid inputs in check_tree`)
   }
+  const [reconstructed_old_root, reconstructed_new_root] = run_tree_proof(tree_proof, 0, new_tree_size, old_tree_size, old_tree_root)
+  if (to_hex(reconstructed_old_root) == to_hex(old_tree_root)) {
+    return reconstructed_new_root
+  }
+  throw new Error('new_tree_root_from_tree_proof failed')
 
-  const [h2, th2] = run_tree_proof(p, 0, t, n, h)
-  if (to_hex(th2) == to_hex(th) && to_hex(h2) == to_hex(h)) {
+}
+
+export function check_tree(tree_proof: Uint8Array[], new_tree_size: number, new_tree_root: Uint8Array, old_tree_size: number, old_tree_root: Uint8Array) {
+  const reconstructed_new_tree_root = new_tree_root_from_tree_proof(tree_proof, new_tree_size, old_tree_size, old_tree_root)
+  if (to_hex(reconstructed_new_tree_root) == to_hex(new_tree_root)) {
     return true
   }
-  throw new Error('errProofFailed')
+  throw new Error('check_tree failed')
+}
 
+
+type InclusionProof = [
+  number, // tree size
+  number, // record index
+  Uint8Array[] // tree path
+]
+
+type ConsistencyProof = [
+  number, // old tree size
+  number, // new tree size
+  Uint8Array[] // tree path
+]
+
+export type TileLogParameters = {
+  tile_height: number
+  hash_size: number
+  hash_function: (bytes: Uint8Array) => Uint8Array
+  read_tile: (tile: string) => Uint8Array
+  update_tiles: (storage_id: number, stored_hash: Uint8Array) => Uint8Array | null
+}
+
+export class TileLog {
+  public th: Hash
+  public thr: TileHashReader
+  public tree_size = 0
+  public tree_root: Uint8Array
+  public read_tile
+  public update_tiles
+  public tile_height: number
+  constructor(
+    config: TileLogParameters
+  ) {
+    this.tile_height = config.tile_height
+    this.th = new Hash(config.hash_function, config.hash_size)
+    this.tree_root = this.th.empty_root()
+    this.thr = new TileHashReader(this.tree_size, this.tree_root, this)
+    this.read_tile = config.read_tile
+    this.update_tiles = config.update_tiles
+  }
+  record_hash(data: Uint8Array) {
+    return record_hash(data)
+  }
+  inclusion_proof(tree_size: number, record_index: number): InclusionProof {
+    return [tree_size, record_index, prove_record(tree_size, record_index, this)]
+  }
+  verify_inclusion_proof(root: Uint8Array, inclusion_proof: InclusionProof, record_hash: Uint8Array) {
+    const [tree_size, record_index, record_proof] = inclusion_proof
+    return check_record(record_proof, tree_size, root, record_index, record_hash)
+  }
+  consistency_proof(old_tree_size: number, new_tree_size: number): ConsistencyProof {
+    return [old_tree_size, new_tree_size, prove_tree(new_tree_size, old_tree_size, this)]
+  }
+  verify_consistency_proof(old_tree_root: Uint8Array, consistency_proof: ConsistencyProof, new_tree_root: Uint8Array) {
+    const [old_tree_size, new_tree_size, proof] = consistency_proof
+    return check_tree(proof, new_tree_size, new_tree_root, old_tree_size, old_tree_root)
+  }
+  root_from_inclusion_proof(inclusion_proof: InclusionProof, record_hash: Uint8Array): Uint8Array {
+    const [tree_size, record_index, record_proof] = inclusion_proof
+    return root_from_record_proof(record_proof, tree_size, record_index, record_hash)
+  }
+  root_from_consistency_proof(old_root: Uint8Array, consistency_proof: ConsistencyProof) {
+    const [old_tree_size, new_tree_size, tree_proof] = consistency_proof
+    return new_tree_root_from_tree_proof(tree_proof, new_tree_size, old_tree_size, old_root)
+  }
+  height() {
+    return this.tile_height
+  }
+  read_tiles(tiles: Tile[]) {
+    const result = [] as Uint8Array[]
+    for (const tile of tiles) {
+      const tile_data = this.read_tile(tile_to_path(tile))
+      result.push(tile_data)
+    }
+    return result
+  }
+  save_tiles(tiles: Tile[]) {
+    // this is usually called on the client
+    // there is no need to save tiles on the server
+    // since they are already saved when this is called
+    // in order to make a client implementation
+    // we need to make the whole process async
+  }
+  read_hashes(storage_ids: number[]) {
+    return storage_ids.map((storage_id) => {
+      const [tile] = tile_for_storage_id(2, storage_id)
+      const tileData = this.read_tile(tile_to_path(tile))
+      const hash = hash_from_tile(tile, tileData, storage_id)
+      return hash
+    })
+  }
+  size() {
+    return this.tree_size
+  }
+  root() {
+    return this.root_at(this.tree_size)
+  }
+  root_at(tree_size: number) {
+    return tree_hash(tree_size, this)
+  }
+  head() {
+    return Buffer.from(this.root()).toString('base64')
+  }
+  write_record_hashes = (record_hashes: Uint8Array[]) => {
+    for (const record_hash of record_hashes) {
+      const leaf_index = this.size()
+      const hashes = stored_hashes_for_record_hash(leaf_index, record_hash, this)
+      let storage_id = stored_hash_count(leaf_index)
+      for (const stored_hash of hashes) {
+        // some hashes here, are not meant to be stored at all!
+        // need to figure out if a hash belongs in a tile or not.
+        const tileData = this.update_tiles(storage_id, stored_hash)
+        if (tileData === null) {
+          storage_id++
+          continue
+        }
+        storage_id++
+      }
+      this.tree_size++;
+    }
+  }
+  write_record = (record: Uint8Array) => {
+    this.write_record_hashes([this.record_hash(record)])
+  }
 }

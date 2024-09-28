@@ -2,7 +2,7 @@
 
 
 // not efficient
-const countTrailing0 = (n: number) => {
+const count_trailing_0 = (n: number) => {
   const ns = n.toString(2)
   let count = 0;
   for (let i = 0; i < ns.length; i++) {
@@ -16,7 +16,7 @@ const countTrailing0 = (n: number) => {
 }
 
 export function trailing_zeros_64(n: number) {
-  return countTrailing0(n)
+  return count_trailing_0(n)
 }
 
 export function Len64(num: number) {

@@ -15,17 +15,18 @@ import {
   check_tree
 } from "../../../src";
 
+
+type HashRecord = {
+  id: number,
+  hash: Buffer
+}
+
+
 const prepare = (db: any) => {
   db.prepare(`
     CREATE TABLE IF NOT EXISTS hashes 
     (id INTEGER PRIMARY KEY, hash BLOB);
         `).run()
-}
-
-
-type HashRecord = {
-  id: number,
-  hash: Buffer
 }
 
 const write_stored_hash = (db: any, record: HashRecord) => {
