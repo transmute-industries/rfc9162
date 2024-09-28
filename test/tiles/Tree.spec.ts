@@ -1,11 +1,8 @@
 import fs from 'fs'
-import crypto from 'crypto'
 
-import { Hash, Tree, verify_inclusion, verify_consistency, to_hex, prettyInclusionProof, prettyConsistencyProof, prettyProof } from "../../src";
+import { Tree, verify_inclusion, verify_consistency, to_hex, prettyInclusionProof, prettyConsistencyProof, prettyProof, tile_for_storage_id, concat, hash_from_tile } from "../../src";
 
-const th = new Hash((data: Uint8Array) => {
-  return new Uint8Array(crypto.createHash('sha256').update(data).digest());
-}, 32)
+import { th } from './test_utils';
 
 it('interop generate', () => {
   const tree = new Tree(th)
@@ -131,3 +128,72 @@ describe('TestTreeIncremental', () => {
     expect(to_hex(tree.hash())).toBe('c34777e9c093d8a7b9907621cf12f7c868a1beb196d09a866f36933849832705')
   })
 })
+
+
+describe('hash_from_tile', () => {
+  const tree = new Tree(th)
+  for (let i = 0; i < 26; i++) {
+    const entry = `entry-${i}`
+    tree.appendData(tree.encodeData(entry))
+  }
+  const rawData = tree.hashes[0].reduce(concat)
+  it('first hash, from first tile', () => {
+    const index = 0
+    const [tile] = tile_for_storage_id(2, index)
+    expect(
+      to_hex(
+        hash_from_tile(th, tile, rawData, index)
+      ))
+      .toBe(
+        Buffer.from('QHZrIDNCkCb1PVRQJnmoOXBrR0H43K86i7pfQbX/4HU=', 'base64').toString('hex')
+      )
+  })
+  it('second hash, from first tile', () => {
+    const index = 1
+    const [tile,] = tile_for_storage_id(2, index)
+    expect(
+      to_hex(
+        hash_from_tile(th, tile, rawData, index)
+      ))
+      .toBe(
+        Buffer.from('6GiBGkgsJ9ULbUXd55xGXWrbmwZkUQBHepDPPYUYiYs=', 'base64').toString('hex')
+      )
+
+  })
+  it('third hash, from first tile', () => {
+    const index = 2
+    const [tile] = tile_for_storage_id(2, index)
+    expect(
+      to_hex(
+        hash_from_tile(th, tile, rawData, index)
+      ))
+      .toBe(
+        Buffer.from('LyelCCwdQq+kiKw1Cp/EOQwIT1T3Hs3/hZ6Y24QptHk=', 'base64').toString('hex')
+      )
+  })
+
+  it('fourth hash, from first tile', () => {
+    const index = 3
+    const [tile] = tile_for_storage_id(2, index)
+    expect(
+      to_hex(
+        hash_from_tile(th, tile, rawData, index)
+      ))
+      .toBe(
+        Buffer.from('BJ19zbVrz+vTEzBMmDnxlqPUtu873AsIKY+TrIGR8Kg=', 'base64').toString('hex')
+      )
+  })
+
+  it('fifth hash, from first tile', () => {
+    const index = 4
+    const [tile] = tile_for_storage_id(2, index)
+    expect(
+      to_hex(
+        hash_from_tile(th, tile, rawData, index)
+      ))
+      .toBe(
+        Buffer.from('J0ebarMh0u5HdFL2i6UndI6GPK/o+9HfK/idFXDRtpc=', 'base64').toString('hex')
+      )
+  })
+})
+

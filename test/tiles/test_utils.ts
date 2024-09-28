@@ -1,6 +1,6 @@
 import crypto from 'crypto'
-import { Hash } from "../../src";
-import { tile_for_storage_id, tile_to_path } from '../../src/Tiles/Tile';
+import { Hash, TileReader } from "../../src";
+import { tile_for_storage_id, tile_to_path, Tile } from '../../src/Tiles/Tile';
 
 const global_tiles = {} as Record<string, Uint8Array>
 
@@ -50,10 +50,35 @@ export const update_tiles = (storage_id: number, stored_hash: Uint8Array) => {
   return tile_data
 }
 
+
+
 export const tile_params = {
   tile_height,
   hash_size,
   hash_function,
   read_tile,
   update_tiles
+}
+
+export class TestTileStorage implements TileReader {
+  public unsaved = 0
+  constructor(public tiles: Record<string, Uint8Array>) { }
+  height() { return 2 }  // testHeight
+  read_tiles(tiles: Tile[]) {
+    const out = [] as any
+    for (let i = 0; i < tiles.length; i++) {
+      const tile = tiles[i]
+      const tileName = tile_to_path(tile)
+      // console.log(tileName)
+      const hasTile = this.tiles[tileName]
+      out.push(hasTile)
+    }
+    this.unsaved += tiles.length
+
+    return out
+  }
+  save_tiles(tiles: Tile[]) {
+    // fake persist on client.
+    this.unsaved -= tiles.length
+  }
 }

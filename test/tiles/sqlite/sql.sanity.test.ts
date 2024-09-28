@@ -82,7 +82,6 @@ WHERE hash = x'${Buffer.from(hash).toString('hex')}'
   return row as HashRecord
 }
 
-
 const encoder = new TextEncoder();
 
 const th = new Hash((data: Uint8Array) => {
