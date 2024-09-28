@@ -252,7 +252,7 @@ describe('TestTiledTree', () => {
           try {
             check_tree(p, i + 1, th, j + 1, trees[j]) // test
           } catch (e) {
-            expect((e as any).message).toBe('errProofFailed')
+            expect((e as any).message).toBe('check_tree failed')
           }
           p[k][0] ^= 1 // fix
         }

@@ -628,19 +628,23 @@ export function run_tree_proof(p: Uint8Array[], lo: number, hi: number, n: numbe
     const [oh, th] = run_tree_proof(p.slice(0, p.length - 1), lo + k, hi, n, old)
     return [node_hash(p[p.length - 1], oh), node_hash(p[p.length - 1], th)]
   }
-
 }
 
 export function new_tree_root_from_tree_proof(tree_proof: Uint8Array[], new_tree_size: number, old_tree_size: number, old_tree_root: Uint8Array) {
-  if (old_tree_size < 1 || new_tree_size < 1 || old_tree_size > new_tree_size) {
-    throw new Error(`tlog: invalid inputs in check_tree`)
+  if (old_tree_size > new_tree_size) {
+    throw new Error(`tlog: old_tree_size is greater than new_tree_size in check_tree`)
+  }
+  if (old_tree_size < 1) {
+    throw new Error(`tlog: old_tree_size is less than 1 in check_tree`)
+  }
+  if (new_tree_size < 1) {
+    throw new Error(`tlog: new_tree_size is less than 1 in check_tree`)
   }
   const [reconstructed_old_root, reconstructed_new_root] = run_tree_proof(tree_proof, 0, new_tree_size, old_tree_size, old_tree_root)
   if (to_hex(reconstructed_old_root) == to_hex(old_tree_root)) {
     return reconstructed_new_root
   }
-  throw new Error('new_tree_root_from_tree_proof failed')
-
+  return new Uint8Array()
 }
 
 export function check_tree(tree_proof: Uint8Array[], new_tree_size: number, new_tree_root: Uint8Array, old_tree_size: number, old_tree_root: Uint8Array) {
