@@ -4,7 +4,7 @@ import {
   hash_from_tile,
   Hash, Tree, concat, to_hex,
   pretty_hash, new_tiles,
-  pretty_hashes,
+  createTile,
   read_tile_data, stored_hash_count,
   stored_hashes, stored_hash_index,
   record_hash, tree_hash,
@@ -156,7 +156,7 @@ describe('TestTiledTree', () => {
 
       for (const tile of new_tiles(testH, i, i + 1)) {
         const data = read_tile_data(tile, storage)
-        const old = Tile(tile[0], tile[1], tile[2], tile[3] - 1)
+        const old = createTile(tile[0], tile[1], tile[2], tile[3] - 1)
         const oldData = tiles[tile_to_path(old)] || new Uint8Array()
         if ((oldData.length != (data.length - hash_size)) || !tile_bytes_are_equal(oldData, data.slice(0, oldData.length))) {
           throw new Error(`tile ${tile} not extending earlier tile ${old}`)

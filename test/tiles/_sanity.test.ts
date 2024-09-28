@@ -40,6 +40,8 @@ const update_tiles = (storage_id: number, stored_hash: Uint8Array) => {
     tile_data = expanded_tile_data
   }
   if (end - start !== 32) {
+    // this hash was an intermediate of the tile
+    // so it will never be persisted
     return null
   } else {
     tile_data.set(stored_hash, start)
