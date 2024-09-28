@@ -85,10 +85,6 @@ export function tile_to_path(tile: Tile) {
   return `tile/${H}/${L}/${N}.${W}`
 }
 
-// should be hash_children
-function node_hash(th: TreeHash, left: Uint8Array, right: Uint8Array) {
-  return th.hash(concat(intermediate_prefix, concat(left, right)))
-}
 
 export function hash_from_tile(th: TreeHash, tile: Tile, data: Uint8Array, storage_id: number) {
   const [tile_height, tile_level, hash_number, tile_width] = tile
@@ -118,8 +114,8 @@ export function tile_hash(th: TreeHash, data: Uint8Array): Uint8Array {
   const n = data.length / 2
   const left = data.slice(0, n)
   const right = data.slice(n, data.length)
-  return node_hash(
-    th,
+
+  return th.hash_children(
     tile_hash(th, left),
     tile_hash(th, right)
   )
@@ -188,7 +184,7 @@ export function stored_hashes_for_record_hash(th: TreeHash, n: number, h: Uint8A
   }
   const old = r.read_hashes(indexes)
   for (let i = 0; i < m; i++) {
-    h = node_hash(th, old[m - 1 - i], h)
+    h = th.hash_children(old[m - 1 - i], h)
     hashes.push(h)
   }
   return hashes
@@ -242,7 +238,7 @@ export function subtree_hash(th: TreeHash, lo: number, hi: number, hashes: Uint8
   }
   let h = hashes[num_tree - 1]
   for (let i = num_tree - 2; i >= 0; i--) {
-    h = node_hash(th, hashes[i], h)
+    h = th.hash_children(hashes[i], h)
   }
   return [h, hashes.slice(num_tree, hashes.length)]
 }
@@ -352,10 +348,10 @@ export function run_record_proof(th: TreeHash, p: RecordProof, lo: number, hi: n
   const [k, _] = max_power_2(hi - lo)
   if (n < lo + k) {
     const nextHash = run_record_proof(th, p.slice(0, p.length - 1), lo, lo + k, n, leafHash)
-    return node_hash(th, nextHash, p[p.length - 1])
+    return th.hash_children(nextHash, p[p.length - 1])
   } else {
     const nextHash = run_record_proof(th, p.slice(0, p.length - 1), lo + k, hi, n, leafHash)
-    return node_hash(th, p[p.length - 1], nextHash)
+    return th.hash_children(p[p.length - 1], nextHash)
   }
 
 }
@@ -499,10 +495,10 @@ export function run_tree_proof(th: TreeHash, p: Uint8Array[], lo: number, hi: nu
   const [k, _] = max_power_2(hi - lo)
   if (n <= lo + k) {
     const [oh, next_hash] = run_tree_proof(th, p.slice(0, p.length - 1), lo, lo + k, n, old)
-    return [oh, node_hash(th, next_hash, p[p.length - 1])]
+    return [oh, th.hash_children(next_hash, p[p.length - 1])]
   } else {
     const [oh, next_hash] = run_tree_proof(th, p.slice(0, p.length - 1), lo + k, hi, n, old)
-    return [node_hash(th, p[p.length - 1], oh), node_hash(th, p[p.length - 1], next_hash)]
+    return [th.hash_children(p[p.length - 1], oh), th.hash_children(p[p.length - 1], next_hash)]
   }
 }
 
@@ -640,7 +636,7 @@ export class TileHashReader implements HashReader {
     let next_hash = hash_from_tile(this.th, tiles[stxTileOrder[stx.length - 1]], data[stxTileOrder[stx.length - 1]], stx[stx.length - 1])
     for (let i = stx.length - 2; i >= 0; i--) {
       const h = hash_from_tile(this.th, tiles[stxTileOrder[i]], data[stxTileOrder[i]], stx[i])
-      next_hash = node_hash(this.th, h, next_hash)
+      next_hash = this.th.hash_children(h, next_hash)
     }
     if (to_hex(next_hash) != to_hex(this.root)) {
       throw new Error(`downloaded inconsistent tile`)
