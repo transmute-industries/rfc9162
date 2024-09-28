@@ -57,24 +57,24 @@ export function stored_hash_index(level: number, hash_number: number) {
   return i + level
 }
 
-export function split_stored_hash_index(record_hash_index: number) {
-  let hash_number = Math.ceil(record_hash_index / 2)
+export function split_stored_hash_index(record_index: number) {
+  let hash_number = Math.ceil(record_index / 2)
   let index_hash_number = stored_hash_index(0, hash_number)
   index_hash_number = Math.ceil(index_hash_number)
-  if (index_hash_number > record_hash_index) {
+  if (index_hash_number > record_index) {
     throw new Error('bad math')
   }
   let x
   // eslint-disable-next-line no-constant-condition
   while (true) {
     x = index_hash_number + 1 + trailing_zeros_64(hash_number + 1)
-    if (x > record_hash_index) {
+    if (x > record_index) {
       break
     }
     hash_number++
     index_hash_number = x
   }
-  const level = record_hash_index - index_hash_number
+  const level = record_index - index_hash_number
   hash_number = hash_number >> level
   return [level, hash_number]
 }
@@ -179,23 +179,23 @@ export function read_tile_data(tile: Tile, r: HashReader) {
   return tileData
 }
 
-export function stored_hash_count(record_hash_number: number) {
-  if (record_hash_number === 0) {
+export function stored_hash_count(record_index: number) {
+  if (record_index === 0) {
     return 0
   }
-  let num_hash = stored_hash_index(0, record_hash_number - 1) + 1
-  for (let i = record_hash_number - 1; (i & 1) != 0; i >>= 1) {
+  let num_hash = stored_hash_index(0, record_index - 1) + 1
+  for (let i = record_index - 1; (i & 1) != 0; i >>= 1) {
     num_hash++
   }
   return num_hash
 }
 
-export function stored_hashes_for_record_hash(th: TreeHash, record_hash_number: number, record_hash: Uint8Array, r: HashReader) {
+export function stored_hashes_for_record_hash(th: TreeHash, record_index: number, record_hash: Uint8Array, r: HashReader) {
   const hashes = [record_hash] as Uint8Array[]
-  const m = trailing_zeros_64(record_hash_number + 1)
+  const m = trailing_zeros_64(record_index + 1)
   const indexes = new Array(m).fill(0)
   for (let i = 0; i < m; i++) {
-    const next = (record_hash_number >> i) - 1
+    const next = (record_index >> i) - 1
     indexes[m - 1 - i] = stored_hash_index(i, next)
   }
   const old = r.read_hashes(indexes)
@@ -208,8 +208,8 @@ export function stored_hashes_for_record_hash(th: TreeHash, record_hash_number: 
 
 
 
-export function stored_hashes(th: TreeHash, record_hash_number: number, data: Uint8Array, r: HashReader) {
-  return stored_hashes_for_record_hash(th, record_hash_number, th.hash_leaf(data), r)
+export function stored_hashes(th: TreeHash, record_index: number, data: Uint8Array, r: HashReader) {
+  return stored_hashes_for_record_hash(th, record_index, th.hash_leaf(data), r)
 }
 
 export function max_power_2(n: number) {
@@ -253,13 +253,13 @@ export function subtree_hash(th: TreeHash, lo: number, hi: number, hashes: Uint8
 }
 
 
-export function tree_hash(th: TreeHash, record_hash_number: number, hash_reader: HashReader) {
-  if (record_hash_number === 0) {
+export function tree_hash(th: TreeHash, record_index: number, hash_reader: HashReader) {
+  if (record_index === 0) {
     return th.empty_root()
   }
-  const indexes = subtree_index(0, record_hash_number, [])
+  const indexes = subtree_index(0, record_index, [])
   let hashes = hash_reader.read_hashes(indexes)
-  const sth = subtree_hash(th, 0, record_hash_number, hashes)
+  const sth = subtree_hash(th, 0, record_index, hashes)
   const hash = sth[0]
   hashes = sth[1]
   if (hashes.length !== 0) {
@@ -270,27 +270,27 @@ export function tree_hash(th: TreeHash, record_hash_number: number, hash_reader:
 
 
 
-export function leaf_proof_index(lo: number, hi: number, record_hash_index: number, needed_storage_ids: number[]) {
-  if (!(lo <= record_hash_index && record_hash_index < hi)) {
+export function leaf_proof_index(lo: number, hi: number, record_index: number, needed_storage_ids: number[]) {
+  if (!(lo <= record_index && record_index < hi)) {
     throw new Error(`tlog: bad math in leaf_proof_index`)
   }
   if ((lo + 1) == hi) {
     return needed_storage_ids
   }
   const [k, _] = max_power_2(hi - lo)
-  if (record_hash_index < lo + k) {
-    needed_storage_ids = leaf_proof_index(lo, lo + k, record_hash_index, needed_storage_ids)
+  if (record_index < lo + k) {
+    needed_storage_ids = leaf_proof_index(lo, lo + k, record_index, needed_storage_ids)
     needed_storage_ids = subtree_index(lo + k, hi, needed_storage_ids)
   } else {
 
     needed_storage_ids = subtree_index(lo, lo + k, needed_storage_ids)
-    needed_storage_ids = leaf_proof_index(lo + k, hi, record_hash_index, needed_storage_ids)
+    needed_storage_ids = leaf_proof_index(lo + k, hi, record_index, needed_storage_ids)
   }
   return needed_storage_ids
 }
 
-export function leaf_proof(th: TreeHash, lo: number, hi: number, record_hash_index: number, hashes: Uint8Array[]): [RecordProof, Uint8Array[]] {
-  if (!(lo <= record_hash_index && record_hash_index < hi)) {
+export function leaf_proof(th: TreeHash, lo: number, hi: number, record_index: number, hashes: Uint8Array[]): [RecordProof, Uint8Array[]] {
+  if (!(lo <= record_index && record_index < hi)) {
     throw new Error(`tlog: bad math in leaf_proof`)
   }
   if (lo + 1 == hi) {
@@ -299,14 +299,14 @@ export function leaf_proof(th: TreeHash, lo: number, hi: number, record_hash_ind
   let p: Uint8Array[]
   let next_hash: Uint8Array
   const [k, _] = max_power_2(hi - lo)
-  if (record_hash_index < lo + k) {
-    [p, hashes] = leaf_proof(th, lo, lo + k, record_hash_index, hashes)
+  if (record_index < lo + k) {
+    [p, hashes] = leaf_proof(th, lo, lo + k, record_index, hashes)
     const sth = subtree_hash(th, lo + k, hi, hashes)
     next_hash = sth[0]
     hashes = sth[1]
   } else {
     [next_hash, hashes] = subtree_hash(th, lo, lo + k, hashes)
-    const lp = leaf_proof(th, lo + k, hi, record_hash_index, hashes)
+    const lp = leaf_proof(th, lo + k, hi, record_index, hashes)
     p = lp[0]
     hashes = lp[1]
   }
@@ -337,15 +337,15 @@ export function prove_record(th: TreeHash, tile: number, n: number, hash_reader:
   return p
 }
 
-export function run_record_proof(th: TreeHash, record_proof: RecordProof, lo: number, hi: number, leaf_index: number, leaf_hash: Uint8Array): Uint8Array {
-  if (!(lo <= leaf_index && leaf_index < hi)) {
+export function run_record_proof(th: TreeHash, record_proof: RecordProof, lo: number, hi: number, record_index: number, record_hash: Uint8Array): Uint8Array {
+  if (!(lo <= record_index && record_index < hi)) {
     throw new Error(`tlog: bad math in run_record_proof`)
   }
   if (lo + 1 === hi) {
     if (record_proof.length !== 0) {
       throw new Error('errProofFailed')
     }
-    return leaf_hash
+    return record_hash
   }
 
   if (record_proof.length === 0) {
@@ -353,11 +353,11 @@ export function run_record_proof(th: TreeHash, record_proof: RecordProof, lo: nu
   }
 
   const [k, _] = max_power_2(hi - lo)
-  if (leaf_index < lo + k) {
-    const nextHash = run_record_proof(th, record_proof.slice(0, record_proof.length - 1), lo, lo + k, leaf_index, leaf_hash)
+  if (record_index < lo + k) {
+    const nextHash = run_record_proof(th, record_proof.slice(0, record_proof.length - 1), lo, lo + k, record_index, record_hash)
     return th.hash_children(nextHash, record_proof[record_proof.length - 1])
   } else {
-    const nextHash = run_record_proof(th, record_proof.slice(0, record_proof.length - 1), lo + k, hi, leaf_index, leaf_hash)
+    const nextHash = run_record_proof(th, record_proof.slice(0, record_proof.length - 1), lo + k, hi, record_index, record_hash)
     return th.hash_children(record_proof[record_proof.length - 1], nextHash)
   }
 
@@ -737,9 +737,9 @@ export class TileLog implements TileStorage, HashReader {
   }
   write_record_hashes = (record_hashes: Uint8Array[]) => {
     for (const record_hash of record_hashes) {
-      const leaf_index = this.size()
-      const hashes = stored_hashes_for_record_hash(this.th, leaf_index, record_hash, this)
-      let storage_id = stored_hash_count(leaf_index)
+      const record_index = this.size()
+      const hashes = stored_hashes_for_record_hash(this.th, record_index, record_hash, this)
+      let storage_id = stored_hash_count(record_index)
       for (const stored_hash of hashes) {
         // some hashes here, are not meant to be stored at all!
         // needed_storage_ids to figure out if a hash belongs in a tile or not.
