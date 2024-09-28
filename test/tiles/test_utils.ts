@@ -3,6 +3,13 @@ import { TreeHash, TileStorage, tile_for_storage_id, tile_to_path, Tile, to_hex 
 
 const global_tiles = {} as Record<string, Uint8Array>
 
+export const hash_storage = {
+  stored_hashes: [] as Uint8Array[],
+  read_hashes: function (indexes: number[]) {
+    return indexes.map((i) => this.stored_hashes[i])
+  }
+}
+
 const encoder = new TextEncoder()
 
 export const tile_height = 2
