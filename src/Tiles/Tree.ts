@@ -342,7 +342,7 @@ export class Tree {
   }
 
   get_nodes(ids: TreeNode[]) {
-    const hashes = new Array(ids.length)
+    const hashes = new Array(ids.length) as Uint8Array[]
     for (const i in ids) {
       const id = ids[i]
       const [level, index] = id
@@ -375,14 +375,5 @@ export class Tree {
     const nodes = consistency(old_tree_size, new_tree_size)
     const hashes = this.get_nodes(nodes.ids)
     return rehash(nodes, hashes, this.tree_hasher.hash_children)
-  }
-
-  get_tile(height: number, level: number, index: number, width?: number) {
-    if (!width) {
-      width = 2 ** height
-    }
-    const start = index * (2 ** height)
-    const end = start + width
-    return this.hashes[level].slice(start, end)
   }
 }

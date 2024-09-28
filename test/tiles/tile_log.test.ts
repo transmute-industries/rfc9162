@@ -1,9 +1,10 @@
 
 import { treeHead } from '../../src/RFC9162';
-import { Tree, TileLog, to_hex, tile_for_storage_id, stored_hash_index, new_tiles } from "../../src";
+import { Tree, TileLog, to_hex, tile_for_storage_id, stored_hash_index, new_tiles, concat } from "../../src";
 import { tile_params, encode, tree_hasher, pretty_hash } from './test_utils';
 
-it('only persist tiles', async () => {
+it('tree sanity', async () => {
+  const tree = new Tree(tree_hasher)
   const log = new TileLog(tile_params)
   const entries = [] as Uint8Array[]
   const root1 = Buffer.from(await treeHead(entries)).toString('base64')
@@ -12,11 +13,15 @@ it('only persist tiles', async () => {
   expect(root1).toBe('47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=')
   for (let i = 0; i < 26; i++) {
     const entry = encode(`entry-${i}`)
+    tree.append_data(entry)
     log.write_record(entry)
     entries.push(entry)
+    // compute tree root 3 ways... and compare.
     const root1 = Buffer.from(await treeHead(entries)).toString('base64')
     const root2 = pretty_hash(log.root())
+    const root3 = pretty_hash(tree.hash())
     expect(root1).toBe(root2)
+    expect(root2).toBe(root3)
   }
 
   const record_hash3 = log.record_hash(encode(`entry-${3}`))

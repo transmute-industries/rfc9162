@@ -1,7 +1,7 @@
 import crypto from 'crypto'
 import { TreeHash, TileStorage, tile_for_storage_id, tile_to_path, Tile, to_hex } from "../../src";
 
-const global_tiles = {} as Record<string, Uint8Array>
+export const global_tiles = {} as Record<string, Uint8Array>
 
 export const hash_storage = {
   stored_hashes: [] as Uint8Array[],
