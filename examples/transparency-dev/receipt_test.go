@@ -67,8 +67,8 @@ func (t *Tree) LeafHash(index uint64) []byte {
 	return t.hashes[0][index]
 }
 
-// Hash returns the current root hash of the tree.
-func (t *Tree) Hash() []byte {
+// TreeHash returns the current root hash of the tree.
+func (t *Tree) TreeHash() []byte {
 	return t.HashAt(t.size)
 }
 
@@ -155,7 +155,7 @@ func TestInclusion(t *testing.T) {
 	tree.appendImpl(th.HashLeaf([]byte("L123456")))
 	// echo -n 004C313233343536 | xxd -r -p | sha256sum
 	// 4C313233343536 -> L123456
-	if hex.EncodeToString(tree.Hash()) != "395aa064aa4c29f7010acfe3f25db9485bbd4b91897b6ad7ad547639252b4d56" {
+	if hex.EncodeToString(tree.TreeHash()) != "395aa064aa4c29f7010acfe3f25db9485bbd4b91897b6ad7ad547639252b4d56" {
 		t.Error("expected root to match leaf for tree of size 1")
 	}
 	tree.appendImpl(th.HashLeaf([]byte("L789")))
@@ -168,7 +168,7 @@ func TestInclusion(t *testing.T) {
 
 	// calculate root for 2 files in bash
 	// echo -n 01"$(printf "\x00" | cat -  ./f1.txt | sha256sum)$(printf "\x00" | cat -  ./f2.txt | sha256sum)" | xxd -r -p | sha256sum
-	if hex.EncodeToString(tree.Hash()) != "1798faa3eb85affab608a28cf885a24a13af4ec794fe3abec046f21b7a799bec" {
+	if hex.EncodeToString(tree.TreeHash()) != "1798faa3eb85affab608a28cf885a24a13af4ec794fe3abec046f21b7a799bec" {
 		t.Error("unexpected root for tree of size 2")
 	}
 	p1, _ := tree.InclusionProof(0, 2)
@@ -180,7 +180,7 @@ func TestInclusion(t *testing.T) {
 	}
 	// add 3rd entry
 	tree.appendImpl(th.HashLeaf([]byte("L012")))
-	if hex.EncodeToString(tree.Hash()) != "3322c85256086aa0e1984dff85eab5f1e11d4b8fbbd6c4510611e3bbab0e132a" {
+	if hex.EncodeToString(tree.TreeHash()) != "3322c85256086aa0e1984dff85eab5f1e11d4b8fbbd6c4510611e3bbab0e132a" {
 		t.Error("unexpected root for tree of size 3")
 	}
 	p2, _ := tree.ConsistencyProof(2, 3)
@@ -239,7 +239,7 @@ func TestSbom(t *testing.T) {
 	if hex.EncodeToString(hash1) != "741fe362e81bc7db27210ac4caa91e7afec412fac206ecf735488cce475b1c78" {
 		t.Error("file hash has changed")
 	}
-	root1 := tree.Hash()
+	root1 := tree.TreeHash()
 	size1 := tree.Size()
 	proof1, _ := tree.InclusionProof(fileToCheckIndex, size1)
 	inclusionProofError := proof.verify_inclusion(th, index1, size1, hash1, proof1, root1)

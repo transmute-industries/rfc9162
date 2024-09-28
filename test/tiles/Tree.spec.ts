@@ -1,6 +1,6 @@
 import fs from 'fs'
 
-import { Tree, verify_inclusion, verify_consistency, to_hex, prettyInclusionProof, prettyConsistencyProof, prettyProof, tile_for_storage_id, concat, hash_from_tile } from "../../src";
+import { Tree, verify_inclusion, verify_consistency, to_hex, pretty_inclusion_proof, pretty_consistency_proof, pretty_proof, tile_for_storage_id, concat, hash_from_tile } from "../../src";
 
 import { th } from './test_utils';
 
@@ -18,19 +18,19 @@ it('interop generate', () => {
   // start
   const start = 0
   const ip1 = tree.inclusionProof(start, size1)
-  const sip1 = prettyInclusionProof(start, ip1, root1, size1)
+  const sip1 = pretty_inclusion_proof(start, ip1, root1, size1)
   fs.writeFileSync('./test/tiles/from-ts/sip1.json', JSON.stringify(sip1, null, 2))
 
   // middle
   const middle = size1 / 2
   const ip2 = tree.inclusionProof(middle, size1)
-  const sip2 = prettyInclusionProof(middle, ip2, root1, size1)
+  const sip2 = pretty_inclusion_proof(middle, ip2, root1, size1)
   fs.writeFileSync('./test/tiles/from-ts/sip2.json', JSON.stringify(sip2, null, 2))
 
   // end
   let end = size1 - 1
   const ip3 = tree.inclusionProof(end, size1)
-  const sip3 = prettyInclusionProof(end, ip3, root1, size1)
+  const sip3 = pretty_inclusion_proof(end, ip3, root1, size1)
   fs.writeFileSync('./test/tiles/from-ts/sip3.json', JSON.stringify(sip3, null, 2))
 
 
@@ -44,11 +44,11 @@ it('interop generate', () => {
   // end
   end = size2 - 1
   const ip4 = tree.inclusionProof(end, size2)
-  const sip4 = prettyInclusionProof(end, ip4, root2, size2)
+  const sip4 = pretty_inclusion_proof(end, ip4, root2, size2)
   fs.writeFileSync('./test/tiles/from-ts/sip4.json', JSON.stringify(sip4, null, 2))
 
   const cp1 = tree.consistencyProof(size1, size2)
-  const scp1 = prettyConsistencyProof(root1, size1, cp1, root2, size2)
+  const scp1 = pretty_consistency_proof(root1, size1, cp1, root2, size2)
   fs.writeFileSync('./test/tiles/from-ts/scp1.json', JSON.stringify(scp1, null, 2))
 
   // assert equality with go
@@ -83,7 +83,7 @@ it('sanity', () => {
   const r1 = tree.hash()
   expect(to_hex(r1)).toBe('1798faa3eb85affab608a28cf885a24a13af4ec794fe3abec046f21b7a799bec')
   const ip0 = tree.inclusionProof(0, 2)
-  expect(prettyProof(ip0)).toEqual(["12250d7a57ba6166c61b0b135fc2c21f096f918b69a42d673d812798d9c5d693"])
+  expect(pretty_proof(ip0)).toEqual(["12250d7a57ba6166c61b0b135fc2c21f096f918b69a42d673d812798d9c5d693"])
   const lh0 = th.hash_leaf(tree.encodeData('L123456'))
   const ip0v = verify_inclusion(th, 0, 2, lh0, ip0, r1)
   expect(ip0v).toBe(true)
@@ -91,7 +91,7 @@ it('sanity', () => {
   const r2 = tree.hash()
   expect(to_hex(r2)).toBe('3322c85256086aa0e1984dff85eab5f1e11d4b8fbbd6c4510611e3bbab0e132a')
   const cp0 = tree.consistencyProof(2, 3)
-  expect(prettyProof(cp0)).toEqual(["4852d9c133177e783c92ef70b3f7ca23d7e8f4b5dc02d415b5c7ea6426db046e"])
+  expect(pretty_proof(cp0)).toEqual(["4852d9c133177e783c92ef70b3f7ca23d7e8f4b5dc02d415b5c7ea6426db046e"])
   const cp0v = verify_consistency(th, 2, 3, cp0, r1, r2)
   expect(cp0v).toBe(true)
 })

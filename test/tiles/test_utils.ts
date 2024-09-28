@@ -1,5 +1,5 @@
 import crypto from 'crypto'
-import { Hash, TileReader } from "../../src";
+import { TreeHash, TileStorage } from "../../src";
 import { tile_for_storage_id, tile_to_path, Tile } from '../../src/Tiles/Tile';
 
 const global_tiles = {} as Record<string, Uint8Array>
@@ -17,7 +17,7 @@ export const hash_function = (data: Uint8Array) => {
   return new Uint8Array(crypto.createHash('sha256').update(data).digest());
 }
 
-export const th = new Hash(hash_function, hash_size)
+export const th = new TreeHash(hash_function, hash_size)
 
 export const read_tile = (tile: string): Uint8Array => {
   const [baseTile] = tile.split('.')
@@ -60,7 +60,7 @@ export const tile_params = {
   update_tiles
 }
 
-export class TestTileStorage implements TileReader {
+export class TestTileStorage implements TileStorage {
   public unsaved = 0
   constructor(public tiles: Record<string, Uint8Array>) { }
   height() { return 2 }  // testHeight

@@ -1,6 +1,6 @@
 
 import { TNode, Len64, Coverage, RangeSize, Sibling, Parent, RangeNodes, trailing_zeros_64, ones_count_64 } from "./Node"
-import { Hash, to_hex } from "./Hash"
+import { TreeHash, to_hex } from "./Tile"
 
 export type Nodes = {
   ids: TNode[],
@@ -63,7 +63,7 @@ function decompose_inclusion_proof(index: number, size: number) {
   return [inner, border]
 }
 
-function chain_inner(th: Hash, seed: Uint8Array, proof: Uint8Array[], index: number) {
+function chain_inner(th: TreeHash, seed: Uint8Array, proof: Uint8Array[], index: number) {
   let i = 0;
   while (i < proof.length) {
     const h = proof[i]
@@ -79,7 +79,7 @@ function chain_inner(th: Hash, seed: Uint8Array, proof: Uint8Array[], index: num
 
 
 
-export function chain_inner_right(th: Hash, seed: Uint8Array, proof: Uint8Array[], index: number) {
+export function chain_inner_right(th: TreeHash, seed: Uint8Array, proof: Uint8Array[], index: number) {
   let i = 0;
   while (i < proof.length) {
     const h = proof[i]
@@ -91,7 +91,7 @@ export function chain_inner_right(th: Hash, seed: Uint8Array, proof: Uint8Array[
   return seed
 }
 
-function chain_border_right(th: Hash, seed: Uint8Array, proof: Uint8Array[]) {
+function chain_border_right(th: TreeHash, seed: Uint8Array, proof: Uint8Array[]) {
   const i = 0;
   while (i < proof.length) {
     const h = proof[i]
@@ -100,7 +100,7 @@ function chain_border_right(th: Hash, seed: Uint8Array, proof: Uint8Array[]) {
   return seed
 }
 
-function root_from_inclusion_proof(th: Hash, index: number, size: number, leafHash: Uint8Array, proof: Uint8Array[]) {
+function root_from_inclusion_proof(th: TreeHash, index: number, size: number, leafHash: Uint8Array, proof: Uint8Array[]) {
   if (index >= size) {
     throw new Error(`index is beyond size: ${index} >= ${size}`)
   }
@@ -121,13 +121,13 @@ function verify_match(calculatedRoot: Uint8Array, expectedRoot: Uint8Array) {
   return to_hex(calculatedRoot) === to_hex(expectedRoot)
 }
 
-export function verify_inclusion(th: Hash, index: number, size: number, leafHash: Uint8Array, proof: Uint8Array[], root: Uint8Array) {
+export function verify_inclusion(th: TreeHash, index: number, size: number, leafHash: Uint8Array, proof: Uint8Array[], root: Uint8Array) {
   const calculatedRoot = root_from_inclusion_proof(th, index, size, leafHash, proof)
   return verify_match(calculatedRoot, root)
 }
 
 
-export function verify_consistency(th: Hash, size1: number, size2: number, proof: Uint8Array[], root1: Uint8Array, root2: Uint8Array) {
+export function verify_consistency(th: TreeHash, size1: number, size2: number, proof: Uint8Array[], root1: Uint8Array, root2: Uint8Array) {
   if (size2 < size1) {
     throw new Error(`size2 (${size2}) < size1 (${size1})`)
   }

@@ -2,7 +2,7 @@ import crypto from 'crypto'
 import sqlite from 'better-sqlite3'
 import {
   stored_hashes,
-  TileReader,
+  TileStorage,
   read_tile_data,
   Tile,
   tree_hash,
@@ -13,7 +13,7 @@ import {
   prove_tree,
   stored_hash_index,
   check_tree,
-  Hash
+  TreeHash
 } from "../../../src";
 
 
@@ -84,7 +84,7 @@ WHERE hash = x'${Buffer.from(hash).toString('hex')}'
 
 const encoder = new TextEncoder();
 
-const th = new Hash((data: Uint8Array) => {
+const th = new TreeHash((data: Uint8Array) => {
   return new Uint8Array(crypto.createHash('sha256').update(data).digest());
 }, 32)
 
@@ -106,7 +106,7 @@ class SQLHashStorage {
 }
 
 const testH = 2
-class SQLTileReader implements TileReader {
+class SQLTileReader implements TileStorage {
   public unsaved = 0
   constructor(public hashReader: SQLHashStorage) {
     this.hashReader = hashReader

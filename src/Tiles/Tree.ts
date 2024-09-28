@@ -1,25 +1,20 @@
-import { Hash, to_hex } from "./Hash";
+import { TreeHash, to_hex } from "./Tile";
 import { TNode, RangeNodes } from "./Node";
 import { inclusion, consistency, rehash } from "./Proof";
 
-export const encoder = new TextEncoder()
-
-
-
-export function prettyProof(hashes: Uint8Array[]) {
+export function pretty_proof(hashes: Uint8Array[]) {
   return hashes.map((h) => {
     return to_hex(h)
   })
 }
 
-
-export function prettyTile(hashes: Uint8Array[]) {
+export function pretty_tile(hashes: Uint8Array[]) {
   return hashes.map((h) => {
     return Buffer.from(h).toString('base64')
   })
 }
 
-export function prettyLevel(level: number, hashes: Uint8Array[][]) {
+export function pretty_level(level: number, hashes: Uint8Array[][]) {
   return JSON.stringify({
     level,
     hashes: hashes[level].map((p) => {
@@ -28,7 +23,7 @@ export function prettyLevel(level: number, hashes: Uint8Array[][]) {
   }, null, 2)
 }
 
-export function prettyInclusionProof(leaf: number, proof: Uint8Array[], root: Uint8Array, size: number) {
+export function pretty_inclusion_proof(leaf: number, proof: Uint8Array[], root: Uint8Array, size: number) {
   return {
     leaf,
     proof: proof.map((p) => {
@@ -39,7 +34,7 @@ export function prettyInclusionProof(leaf: number, proof: Uint8Array[], root: Ui
   }
 }
 
-export function prettyConsistencyProof(root1: Uint8Array, size1: number, proof: Uint8Array[], root2: Uint8Array, size2: number,) {
+export function pretty_consistency_proof(root1: Uint8Array, size1: number, proof: Uint8Array[], root2: Uint8Array, size2: number,) {
   return {
     root1: Buffer.from(root1).toString('base64'),
     size1,
@@ -53,13 +48,15 @@ export function prettyConsistencyProof(root1: Uint8Array, size1: number, proof: 
 
 export class Tree {
   public size: number
+  public encoder: TextEncoder
 
-  constructor(public th: Hash, public hashes: Uint8Array[][] = []) {
+  constructor(public th: TreeHash, public hashes: Uint8Array[][] = []) {
     this.size = this.hashes.length
+    this.encoder = new TextEncoder()
   }
 
   encodeData(data: string) {
-    return encoder.encode(data)
+    return this.encoder.encode(data)
   }
 
   appendData(data: Uint8Array) {
@@ -132,6 +129,4 @@ export class Tree {
     const end = start + width
     return this.hashes[level].slice(start, end)
   }
-
-
 }
