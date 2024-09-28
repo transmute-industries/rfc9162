@@ -1,7 +1,7 @@
 
 import { treeHead } from '../../src/RFC9162';
 import { Tree, TileLog, to_hex, tile_for_storage_id, stored_hash_index, new_tiles } from "../../src";
-import { tile_params, encode, th, pretty_hash } from './test_utils';
+import { tile_params, encode, tree_hasher, pretty_hash } from './test_utils';
 
 it('only persist tiles', async () => {
   const log = new TileLog(tile_params)
@@ -38,7 +38,7 @@ it('only persist tiles', async () => {
 
 
 it('generate log entries', async () => {
-  const tree = new Tree(th)
+  const tree = new Tree(tree_hasher)
   const entries: Uint8Array[] = []
   for (let i = 0; i < 26; i++) {
     const message = `entry-${i}`
@@ -47,7 +47,7 @@ it('generate log entries', async () => {
     tree.appendData(tree.encodeData(message))
   }
   const tileTreeEncoded = tree.hashes[0].map((h) => Buffer.from(h).toString('base64'))
-  const oldTreeEncoded = entries.map((h) => Buffer.from(tree.th.hash_leaf(h)).toString('base64'))
+  const oldTreeEncoded = entries.map((h) => Buffer.from(tree.tree_hasher.hash_leaf(h)).toString('base64'))
   // tree equality from leaf equality
   expect(tileTreeEncoded)
     .toEqual(oldTreeEncoded)
@@ -65,21 +65,21 @@ it('generate log entries', async () => {
 
 
 it('tree hasher', () => {
-  const empty_root = th.empty_root();
+  const empty_root = tree_hasher.empty_root();
   expect(to_hex(empty_root)).toBe('e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855')
-  const emptyLeaf = th.hash_leaf(Buffer.from(new Uint8Array()));
+  const emptyLeaf = tree_hasher.hash_leaf(Buffer.from(new Uint8Array()));
   expect(to_hex(emptyLeaf)).toBe('6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d')
   // beware these are fake intermediates
-  const intermediateHash = th.hash_children(Buffer.from('N123'), Buffer.from('N456'))
+  const intermediateHash = tree_hasher.hash_children(Buffer.from('N123'), Buffer.from('N456'))
   expect(to_hex(intermediateHash)).toBe('aa217fe888e47007fa15edab33c2b492a722cb106c64667fc2b044444de66bbb')
 })
 
 it('tile_for_storage_id', () => {
-  expect(tile_for_storage_id(th.hash_size, 2, 0)).toEqual([[2, 0, 0, 1], 0, 32])
-  expect(tile_for_storage_id(th.hash_size, 2, 1)).toEqual([[2, 0, 0, 2], 32, 64])
-  expect(tile_for_storage_id(th.hash_size, 2, 2)).toEqual([[2, 0, 0, 2], 0, 64])
-  expect(tile_for_storage_id(th.hash_size, 2, 3)).toEqual([[2, 0, 0, 3], 64, 96])
-  expect(tile_for_storage_id(th.hash_size, 8, 9)).toEqual([[8, 0, 0, 6], 128, 192])
+  expect(tile_for_storage_id(tree_hasher.hash_size, 2, 0)).toEqual([[2, 0, 0, 1], 0, 32])
+  expect(tile_for_storage_id(tree_hasher.hash_size, 2, 1)).toEqual([[2, 0, 0, 2], 32, 64])
+  expect(tile_for_storage_id(tree_hasher.hash_size, 2, 2)).toEqual([[2, 0, 0, 2], 0, 64])
+  expect(tile_for_storage_id(tree_hasher.hash_size, 2, 3)).toEqual([[2, 0, 0, 3], 64, 96])
+  expect(tile_for_storage_id(tree_hasher.hash_size, 8, 9)).toEqual([[8, 0, 0, 6], 128, 192])
 })
 
 

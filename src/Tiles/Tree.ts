@@ -142,67 +142,67 @@ function decompose_inclusion_proof(index: number, size: number) {
   return [inner, border]
 }
 
-function chain_inner(th: TreeHash, seed: Uint8Array, proof: Uint8Array[], index: number) {
+function chain_inner(tree_hasher: TreeHash, seed: Uint8Array, proof: Uint8Array[], index: number) {
   let i = 0;
   while (i < proof.length) {
     const h = proof[i]
     if ((index >> i) == 0) {
-      seed = th.hash_children(seed, h)
+      seed = tree_hasher.hash_children(seed, h)
     } else {
-      seed = th.hash_children(h, seed)
+      seed = tree_hasher.hash_children(h, seed)
     }
     i++;
   }
   return seed
 }
 
-export function chain_inner_right(th: TreeHash, seed: Uint8Array, proof: Uint8Array[], index: number) {
+export function chain_inner_right(tree_hasher: TreeHash, seed: Uint8Array, proof: Uint8Array[], index: number) {
   let i = 0;
   while (i < proof.length) {
     const h = proof[i]
     if (index >> i) {
-      seed = th.hash_children(h, seed)
+      seed = tree_hasher.hash_children(h, seed)
     }
     i++
   }
   return seed
 }
 
-function chain_border_right(th: TreeHash, seed: Uint8Array, proof: Uint8Array[]) {
+function chain_border_right(tree_hasher: TreeHash, seed: Uint8Array, proof: Uint8Array[]) {
   const i = 0;
   while (i < proof.length) {
     const h = proof[i]
-    seed = th.hash_children(h, seed)
+    seed = tree_hasher.hash_children(h, seed)
   }
   return seed
 }
 
-function root_from_inclusion_proof(th: TreeHash, index: number, size: number, leaf_hash: Uint8Array, proof: Uint8Array[]) {
+function root_from_inclusion_proof(tree_hasher: TreeHash, index: number, size: number, leaf_hash: Uint8Array, proof: Uint8Array[]) {
   if (index >= size) {
     throw new Error(`index is beyond size: ${index} >= ${size}`)
   }
-  if (leaf_hash.length != th.hash_size) {
-    throw new Error(`leaf_hash has unexpected size ${leaf_hash.length}, want ${th.hash_size}`)
+  if (leaf_hash.length != tree_hasher.hash_size) {
+    throw new Error(`leaf_hash has unexpected size ${leaf_hash.length}, want ${tree_hasher.hash_size}`)
   }
   const [inner, border] = decompose_inclusion_proof(index, size)
 
   if (proof.length != inner + border) {
     throw new Error(`wrong proof size ${proof.length}, want ${inner + border}`)
   }
-  let res = chain_inner(th, leaf_hash, proof.slice(0, inner), index)
-  res = chain_border_right(th, res, proof.slice(inner, proof.length))
+  let res = chain_inner(tree_hasher, leaf_hash, proof.slice(0, inner), index)
+  res = chain_border_right(tree_hasher, res, proof.slice(inner, proof.length))
   return res
 }
 
 
 
-export function verify_inclusion(th: TreeHash, index: number, size: number, leaf_hash: Uint8Array, proof: Uint8Array[], root: Uint8Array) {
-  const reconstructed_root = root_from_inclusion_proof(th, index, size, leaf_hash, proof)
+export function verify_inclusion(tree_hasher: TreeHash, index: number, size: number, leaf_hash: Uint8Array, proof: Uint8Array[], root: Uint8Array) {
+  const reconstructed_root = root_from_inclusion_proof(tree_hasher, index, size, leaf_hash, proof)
   return verify_match(reconstructed_root, root)
 }
 
 
-export function verify_consistency(th: TreeHash, size1: number, size2: number, proof: Uint8Array[], root1: Uint8Array, root2: Uint8Array) {
+export function verify_consistency(tree_hasher: TreeHash, size1: number, size2: number, proof: Uint8Array[], root1: Uint8Array, root2: Uint8Array) {
   if (size2 < size1) {
     throw new Error(`size2 (${size2}) < size1 (${size1})`)
   }
@@ -238,13 +238,13 @@ export function verify_consistency(th: TreeHash, size1: number, size2: number, p
   }
   proof = proof.slice(start, proof.length)
   const mask = (size1 - 1) >> shift
-  let hash1 = chain_inner_right(th, seed, proof.slice(0, inner), mask)
-  hash1 = chain_border_right(th, hash1, proof.slice(inner, proof.length))
+  let hash1 = chain_inner_right(tree_hasher, seed, proof.slice(0, inner), mask)
+  hash1 = chain_border_right(tree_hasher, hash1, proof.slice(inner, proof.length))
   if (!verify_match(hash1, root1)) {
     throw new Error('inconsistency with root 1')
   }
-  let hash2 = chain_inner(th, seed, proof.slice(0, inner), mask)
-  hash2 = chain_border_right(th, hash2, proof.slice(inner, proof.length))
+  let hash2 = chain_inner(tree_hasher, seed, proof.slice(0, inner), mask)
+  hash2 = chain_border_right(tree_hasher, hash2, proof.slice(inner, proof.length))
   if (!verify_match(hash2, root2)) {
     throw new Error('inconsistency with root 2')
   }
@@ -306,7 +306,7 @@ export class Tree {
   public size: number
   public encoder: TextEncoder
 
-  constructor(public th: TreeHash, public hashes: Uint8Array[][] = []) {
+  constructor(public tree_hasher: TreeHash, public hashes: Uint8Array[][] = []) {
     this.size = this.hashes.length
     this.encoder = new TextEncoder()
   }
@@ -316,7 +316,7 @@ export class Tree {
   }
 
   appendData(data: Uint8Array) {
-    const hash = this.th.hash_leaf(data)
+    const hash = this.tree_hasher.hash_leaf(data)
     this.appendHash(hash)
   }
 
@@ -325,7 +325,7 @@ export class Tree {
     while (((this.size >> level) & 1) == 1) {
       this.hashes[level].push(hash)
       const row = this.hashes[level]
-      hash = this.th.hash_children(row[row.length - 2], hash)
+      hash = this.tree_hasher.hash_children(row[row.length - 2], hash)
       level++
     }
     if (level > this.hashes.length) {
@@ -353,13 +353,13 @@ export class Tree {
 
   hashAt(size: number) {
     if (size === 0) {
-      return this.th.empty_root()
+      return this.tree_hasher.empty_root()
     }
     const hashes = this.getNodes(range_nodes(0, size, []))
     let hash = hashes[hashes.length - 1]
     let i = hashes.length - 2;
     while (i >= 0) {
-      hash = this.th.hash_children(hashes[i], hash)
+      hash = this.tree_hasher.hash_children(hashes[i], hash)
       i--
     }
     return hash
@@ -368,13 +368,13 @@ export class Tree {
   inclusionProof(index: number, size: number) {
     const nodes = inclusion(index, size)
     const hashes = this.getNodes(nodes.ids)
-    return rehash(nodes, hashes, this.th.hash_children)
+    return rehash(nodes, hashes, this.tree_hasher.hash_children)
   }
 
   consistencyProof(size1: number, size2: number) {
     const nodes = consistency(size1, size2)
     const hashes = this.getNodes(nodes.ids)
-    return rehash(nodes, hashes, this.th.hash_children)
+    return rehash(nodes, hashes, this.tree_hasher.hash_children)
   }
 
   getTile(height: number, level: number, index: number, width?: number) {

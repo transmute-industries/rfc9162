@@ -2,10 +2,10 @@ import fs from 'fs'
 
 import { Tree, verify_inclusion, verify_consistency, to_hex, tile_for_storage_id, concat, hash_from_tile } from "../../src";
 
-import { th, pretty_inclusion_proof, pretty_consistency_proof, pretty_proof, } from './test_utils';
+import { tree_hasher, pretty_inclusion_proof, pretty_consistency_proof, pretty_proof, } from './test_utils';
 
 it('interop generate', () => {
-  const tree = new Tree(th)
+  const tree = new Tree(tree_hasher)
 
   for (let i = 0; i < 10; i++) {
     const entry = `entry-${i}`
@@ -62,7 +62,7 @@ it('interop generate', () => {
 describe('tree size', () => {
   const interopSizeToRoot = JSON.parse(fs.readFileSync('./test/tiles/from-ts/size-to-root.json').toString())
 
-  const tree = new Tree(th)
+  const tree = new Tree(tree_hasher)
   for (let i = 0; i < 10; i++) {
     const entry = `entry-${i}`
     tree.appendData(tree.encodeData(entry))
@@ -75,7 +75,7 @@ describe('tree size', () => {
 })
 
 it('sanity', () => {
-  const tree = new Tree(th)
+  const tree = new Tree(tree_hasher)
   tree.appendData(tree.encodeData('L123456'))
   const r0 = tree.hash()
   expect(to_hex(r0)).toBe('395aa064aa4c29f7010acfe3f25db9485bbd4b91897b6ad7ad547639252b4d56')
@@ -84,35 +84,35 @@ it('sanity', () => {
   expect(to_hex(r1)).toBe('1798faa3eb85affab608a28cf885a24a13af4ec794fe3abec046f21b7a799bec')
   const ip0 = tree.inclusionProof(0, 2)
   expect(pretty_proof(ip0)).toEqual(["12250d7a57ba6166c61b0b135fc2c21f096f918b69a42d673d812798d9c5d693"])
-  const lh0 = th.hash_leaf(tree.encodeData('L123456'))
-  const ip0v = verify_inclusion(th, 0, 2, lh0, ip0, r1)
+  const lh0 = tree_hasher.hash_leaf(tree.encodeData('L123456'))
+  const ip0v = verify_inclusion(tree_hasher, 0, 2, lh0, ip0, r1)
   expect(ip0v).toBe(true)
   tree.appendData(tree.encodeData('L012'))
   const r2 = tree.hash()
   expect(to_hex(r2)).toBe('3322c85256086aa0e1984dff85eab5f1e11d4b8fbbd6c4510611e3bbab0e132a')
   const cp0 = tree.consistencyProof(2, 3)
   expect(pretty_proof(cp0)).toEqual(["4852d9c133177e783c92ef70b3f7ca23d7e8f4b5dc02d415b5c7ea6426db046e"])
-  const cp0v = verify_consistency(th, 2, 3, cp0, r1, r2)
+  const cp0v = verify_consistency(tree_hasher, 2, 3, cp0, r1, r2)
   expect(cp0v).toBe(true)
 })
 
 
 describe('TestTreeIncremental', () => {
-  const tree = new Tree(th)
+  const tree = new Tree(tree_hasher)
   it('the empty tree hash', () => {
     expect(to_hex(tree.hash())).toBe('e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855')
   })
 
   it('the empty leaf hash', () => {
     const leaf = new Uint8Array()
-    const leafHash = th.hash_leaf(leaf)
+    const leafHash = tree_hasher.hash_leaf(leaf)
     tree.appendHash(leafHash)
     expect(to_hex(tree.hash())).toBe('6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d')
   })
 
   it('the first intermediate / root', () => {
     const leaf = tree.encodeData(`entry-1`)
-    const leafHash = th.hash_leaf(leaf)
+    const leafHash = tree_hasher.hash_leaf(leaf)
     expect(to_hex(leafHash)).toBe(`e868811a482c27d50b6d45dde79c465d6adb9b06645100477a90cf3d8518898b`)
     tree.appendHash(leafHash)
     expect(to_hex(tree.hash())).toBe('ef2154dde385935cccbaa4129960d8fb571ae75737203e70252c47431d0b2e3e')
@@ -131,7 +131,7 @@ describe('TestTreeIncremental', () => {
 
 
 describe('hash_from_tile', () => {
-  const tree = new Tree(th)
+  const tree = new Tree(tree_hasher)
   for (let i = 0; i < 26; i++) {
     const entry = `entry-${i}`
     tree.appendData(tree.encodeData(entry))
@@ -139,10 +139,10 @@ describe('hash_from_tile', () => {
   const rawData = tree.hashes[0].reduce(concat)
   it('first hash, from first tile', () => {
     const index = 0
-    const [tile] = tile_for_storage_id(th.hash_size, 2, index)
+    const [tile] = tile_for_storage_id(tree_hasher.hash_size, 2, index)
     expect(
       to_hex(
-        hash_from_tile(th, tile, rawData, index)
+        hash_from_tile(tree_hasher, tile, rawData, index)
       ))
       .toBe(
         Buffer.from('QHZrIDNCkCb1PVRQJnmoOXBrR0H43K86i7pfQbX/4HU=', 'base64').toString('hex')
@@ -150,10 +150,10 @@ describe('hash_from_tile', () => {
   })
   it('second hash, from first tile', () => {
     const index = 1
-    const [tile,] = tile_for_storage_id(th.hash_size, 2, index)
+    const [tile,] = tile_for_storage_id(tree_hasher.hash_size, 2, index)
     expect(
       to_hex(
-        hash_from_tile(th, tile, rawData, index)
+        hash_from_tile(tree_hasher, tile, rawData, index)
       ))
       .toBe(
         Buffer.from('6GiBGkgsJ9ULbUXd55xGXWrbmwZkUQBHepDPPYUYiYs=', 'base64').toString('hex')
@@ -162,10 +162,10 @@ describe('hash_from_tile', () => {
   })
   it('third hash, from first tile', () => {
     const index = 2
-    const [tile] = tile_for_storage_id(th.hash_size, 2, index)
+    const [tile] = tile_for_storage_id(tree_hasher.hash_size, 2, index)
     expect(
       to_hex(
-        hash_from_tile(th, tile, rawData, index)
+        hash_from_tile(tree_hasher, tile, rawData, index)
       ))
       .toBe(
         Buffer.from('LyelCCwdQq+kiKw1Cp/EOQwIT1T3Hs3/hZ6Y24QptHk=', 'base64').toString('hex')
@@ -174,10 +174,10 @@ describe('hash_from_tile', () => {
 
   it('fourth hash, from first tile', () => {
     const index = 3
-    const [tile] = tile_for_storage_id(th.hash_size, 2, index)
+    const [tile] = tile_for_storage_id(tree_hasher.hash_size, 2, index)
     expect(
       to_hex(
-        hash_from_tile(th, tile, rawData, index)
+        hash_from_tile(tree_hasher, tile, rawData, index)
       ))
       .toBe(
         Buffer.from('BJ19zbVrz+vTEzBMmDnxlqPUtu873AsIKY+TrIGR8Kg=', 'base64').toString('hex')
@@ -186,10 +186,10 @@ describe('hash_from_tile', () => {
 
   it('fifth hash, from first tile', () => {
     const index = 4
-    const [tile] = tile_for_storage_id(th.hash_size, 2, index)
+    const [tile] = tile_for_storage_id(tree_hasher.hash_size, 2, index)
     expect(
       to_hex(
-        hash_from_tile(th, tile, rawData, index)
+        hash_from_tile(tree_hasher, tile, rawData, index)
       ))
       .toBe(
         Buffer.from('J0ebarMh0u5HdFL2i6UndI6GPK/o+9HfK/idFXDRtpc=', 'base64').toString('hex')

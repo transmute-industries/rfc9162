@@ -16,7 +16,7 @@ export const hash_function = (data: Uint8Array) => {
   return new Uint8Array(crypto.createHash('sha256').update(data).digest());
 }
 
-export const th = new TreeHash(hash_function, hash_size)
+export const tree_hasher = new TreeHash(hash_function, hash_size)
 
 export const read_tile = (tile: string): Uint8Array => {
   const [baseTile] = tile.split('.')
