@@ -4,8 +4,18 @@
 import { TreeHash, to_hex } from "./TreeHash";
 
 
-
 export type TreeNode = [number, number]
+
+
+export type TreeNodes = {
+  ids: TreeNode[],
+  begin: number,
+  end: number,
+  ephem: TreeNode
+}
+
+export type HashChildren = (left: Uint8Array, right: Uint8Array) => Uint8Array
+
 
 export function create_tree_node(level: number, index: number) {
   return [level, index] as TreeNode
@@ -85,14 +95,6 @@ export function range_nodes(begin: number, end: number, ids: TreeNode[]) {
 }
 
 
-export type TreeNodes = {
-  ids: TreeNode[],
-  begin: number,
-  end: number,
-  ephem: TreeNode
-}
-
-export type HashChildren = (left: Uint8Array, right: Uint8Array) => Uint8Array
 
 function skip_first(nodes: TreeNodes) {
   nodes.ids = nodes.ids.slice(1, nodes.ids.length)
@@ -133,12 +135,9 @@ export function create_nodes(index: number, level: number, size: number): TreeNo
   }
 }
 
-
 function inner_proof_size(index: number, size: number) {
   return length_64(index ^ (size - 1))
 }
-
-
 
 function decompose_inclusion_proof(index: number, size: number) {
   const inner = inner_proof_size(index, size)
@@ -159,8 +158,6 @@ function chain_inner(th: TreeHash, seed: Uint8Array, proof: Uint8Array[], index:
   }
   return seed
 }
-
-
 
 export function chain_inner_right(th: TreeHash, seed: Uint8Array, proof: Uint8Array[], index: number) {
   let i = 0;
@@ -183,19 +180,19 @@ function chain_border_right(th: TreeHash, seed: Uint8Array, proof: Uint8Array[])
   return seed
 }
 
-function root_from_inclusion_proof(th: TreeHash, index: number, size: number, leafHash: Uint8Array, proof: Uint8Array[]) {
+function root_from_inclusion_proof(th: TreeHash, index: number, size: number, leaf_hash: Uint8Array, proof: Uint8Array[]) {
   if (index >= size) {
     throw new Error(`index is beyond size: ${index} >= ${size}`)
   }
-  if (leafHash.length != th.hash_size) {
-    throw new Error(`leafHash has unexpected size ${leafHash.length}, want ${th.hash_size}`)
+  if (leaf_hash.length != th.hash_size) {
+    throw new Error(`leaf_hash has unexpected size ${leaf_hash.length}, want ${th.hash_size}`)
   }
   const [inner, border] = decompose_inclusion_proof(index, size)
 
   if (proof.length != inner + border) {
     throw new Error(`wrong proof size ${proof.length}, want ${inner + border}`)
   }
-  let res = chain_inner(th, leafHash, proof.slice(0, inner), index)
+  let res = chain_inner(th, leaf_hash, proof.slice(0, inner), index)
   res = chain_border_right(th, res, proof.slice(inner, proof.length))
   return res
 }
@@ -204,9 +201,9 @@ function verify_match(calculatedRoot: Uint8Array, expectedRoot: Uint8Array) {
   return to_hex(calculatedRoot) === to_hex(expectedRoot)
 }
 
-export function verify_inclusion(th: TreeHash, index: number, size: number, leafHash: Uint8Array, proof: Uint8Array[], root: Uint8Array) {
-  const calculatedRoot = root_from_inclusion_proof(th, index, size, leafHash, proof)
-  return verify_match(calculatedRoot, root)
+export function verify_inclusion(th: TreeHash, index: number, size: number, leaf_hash: Uint8Array, proof: Uint8Array[], root: Uint8Array) {
+  const reconstructed_root = root_from_inclusion_proof(th, index, size, leaf_hash, proof)
+  return verify_match(reconstructed_root, root)
 }
 
 
@@ -249,7 +246,6 @@ export function verify_consistency(th: TreeHash, size1: number, size2: number, p
   let hash1 = chain_inner_right(th, seed, proof.slice(0, inner), mask)
   hash1 = chain_border_right(th, hash1, proof.slice(inner, proof.length))
   if (!verify_match(hash1, root1)) {
-    console.log({ hash1, root1 })
     throw new Error('inconsistency with root 1')
   }
   let hash2 = chain_inner(th, seed, proof.slice(0, inner), mask)
