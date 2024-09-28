@@ -22,53 +22,50 @@ export interface TileReader {
 
 export type Tile = [number, number, number, number]
 
-
-export function createTile(height: number, level: number, hash_number: number, width: number) {
+export function create_tile(height: number, level: number, hash_number: number, width: number) {
   return [height, level, hash_number, width] as Tile
 }
 
-export const pretty_hash = (h: Uint8Array) => {
-  return Buffer.from(h).toString('base64')
+export const pretty_hash = (hash: Uint8Array) => {
+  return Buffer.from(hash).toString('base64')
 }
 
-export const pretty_hashes = (hs: Uint8Array[]) => {
-  return hs.map(pretty_hash)
+export const pretty_hashes = (hashes: Uint8Array[]) => {
+  return hashes.map(pretty_hash)
 }
 
-export function stored_hash_index(level: number, n: number) {
+export function stored_hash_index(level: number, hash_number: number) {
   for (let l = level; l > 0; l--) {
-    n = 2 * n + 1
+    hash_number = 2 * hash_number + 1
   }
   let i = 0;
-  while (n > 0) {
-    i += n
-    n >>= 1
+  while (hash_number > 0) {
+    i += hash_number
+    hash_number >>= 1
   }
   return i + level
 }
 
 export function split_stored_hash_index(hash_index: number) {
-  let n = Math.ceil(hash_index / 2)
-  let index_hash_number = stored_hash_index(0, n)
+  let hash_number = Math.ceil(hash_index / 2)
+  let index_hash_number = stored_hash_index(0, hash_number)
   index_hash_number = Math.ceil(index_hash_number)
   if (index_hash_number > hash_index) {
     throw new Error('bad math')
   }
-
   let x
   // eslint-disable-next-line no-constant-condition
   while (true) {
-    x = index_hash_number + 1 + trailing_zeros_64(n + 1)
-    // console.log({x, index_hash_number, n1: n+1})
+    x = index_hash_number + 1 + trailing_zeros_64(hash_number + 1)
     if (x > hash_index) {
       break
     }
-    n++
+    hash_number++
     index_hash_number = x
   }
   const level = hash_index - index_hash_number
-  n = n >> level
-  return [level, n]
+  hash_number = hash_number >> level
+  return [level, hash_number]
 }
 
 export function tile_for_storage_id(height: number, storage_id: number): [Tile, number, number] {
@@ -84,7 +81,7 @@ export function tile_for_storage_id(height: number, storage_id: number): [Tile, 
   const tile_width = (n + 1) >> 0 << level
   const start = (n << level) * hash_size
   const end = ((n + 1) << level) * hash_size
-  const tile = createTile(tile_height, tile_level, hash_number, tile_width)
+  const tile = create_tile(tile_height, tile_level, hash_number, tile_width)
   return [tile, start, end]
 }
 
@@ -144,12 +141,12 @@ export function new_tiles(h: number, oldTreeSize: number, newTreeSize: number) {
       continue
     }
     for (let n = oldN >> H; n < (newN >> H); n++) {
-      tiles.push(createTile(h, level, n, 1 << H))
+      tiles.push(create_tile(h, level, n, 1 << H))
     }
     const n = newN >> H
     const w = newN - (n << H)
     if (w > 0) {
-      tiles.push(createTile(h, level, n, w))
+      tiles.push(create_tile(h, level, n, w))
     }
   }
   return tiles
@@ -393,11 +390,11 @@ export function tile_parent(tile: Tile, k: number, n: number): Tile {
   const max = n >> (tile_level * tile_height)
   if ((hash_number << tile_height) + tile_width >= max) {
     if ((hash_number << tile_height) >= max) {
-      return createTile(tile_height, tile_level, hash_number, tile_width) // ?
+      return create_tile(tile_height, tile_level, hash_number, tile_width) // ?
     }
     tile_width = max - (hash_number << tile_height)
   }
-  return createTile(tile_height, tile_level, hash_number, tile_width)
+  return create_tile(tile_height, tile_level, hash_number, tile_width)
 }
 
 export class TileHashReader {
