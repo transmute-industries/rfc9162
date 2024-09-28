@@ -1,6 +1,6 @@
-import api from '../src'
 
-const {
+
+import {
   strToBin,
   binToHex,
   leaf,
@@ -9,7 +9,7 @@ const {
   verifyInclusionProof,
   consistencyProof,
   verifyConsistencyProof,
-} = api
+} from '../../src'
 
 // https://datatracker.ietf.org/doc/html/rfc9162#name-merkle-consistency-proofs
 
