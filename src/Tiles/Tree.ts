@@ -1,11 +1,9 @@
 
 
 
-import { TreeHash, to_hex } from "./TreeHash";
-
+import { TreeHash, verify_match } from "./TreeHash";
 
 export type TreeNode = [number, number]
-
 
 export type TreeNodes = {
   ids: TreeNode[],
@@ -20,7 +18,6 @@ export type HashChildren = (left: Uint8Array, right: Uint8Array) => Uint8Array
 export function create_tree_node(level: number, index: number) {
   return [level, index] as TreeNode
 }
-
 
 // not efficient
 export function trailing_zeros_64(n: number) {
@@ -197,9 +194,7 @@ function root_from_inclusion_proof(th: TreeHash, index: number, size: number, le
   return res
 }
 
-function verify_match(calculatedRoot: Uint8Array, expectedRoot: Uint8Array) {
-  return to_hex(calculatedRoot) === to_hex(expectedRoot)
-}
+
 
 export function verify_inclusion(th: TreeHash, index: number, size: number, leaf_hash: Uint8Array, proof: Uint8Array[], root: Uint8Array) {
   const reconstructed_root = root_from_inclusion_proof(th, index, size, leaf_hash, proof)

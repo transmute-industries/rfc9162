@@ -17,6 +17,10 @@ export function to_hex(bytes: Uint8Array) {
   )
 }
 
+export function verify_match(root1: Uint8Array, root2: Uint8Array) {
+  return to_hex(root1) === to_hex(root2)
+}
+
 export class TreeHash {
   constructor(public hash: (data: Uint8Array) => Uint8Array, public hash_size: number) { }
   empty_root() {

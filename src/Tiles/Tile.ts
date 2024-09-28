@@ -3,7 +3,7 @@
 
 import { trailing_zeros_64 } from "./Tree"
 
-import { TreeHash, concat, to_hex } from "./TreeHash"
+import { TreeHash, concat, verify_match } from "./TreeHash"
 
 export interface HashReader {
   read_hashes: (indexes: number[]) => Uint8Array[]
@@ -376,7 +376,7 @@ export function root_from_record_proof(th: TreeHash, record_proof: RecordProof, 
 
 export function check_record(th: TreeHash, record_proof: RecordProof, record_index: number, tree_root: Uint8Array, tree_size: number, record_hash: Uint8Array) {
   const reconstructed_root = root_from_record_proof(th, record_proof, record_index, tree_size, record_hash)
-  return to_hex(reconstructed_root) === to_hex(tree_root)
+  return verify_match(reconstructed_root, tree_root)
 }
 
 export function tile_parent(tile: Tile, k: number, n: number): Tile {
@@ -476,34 +476,34 @@ export function prove_tree(th: TreeHash, tile: number, record_index: number, has
   return p
 }
 
-export function run_tree_proof(th: TreeHash, p: Uint8Array[], lo: number, hi: number, record_index: number, old: Uint8Array): [Uint8Array, Uint8Array] {
+export function run_tree_proof(th: TreeHash, tree_proof: TreeProof, lo: number, hi: number, record_index: number, old_tree_root: Uint8Array): [Uint8Array, Uint8Array] {
   if (!(lo < record_index && record_index <= hi)) {
     throw new Error(`tlog: bad math in run_tree_proof`)
   }
   if (record_index == hi) {
     if (lo == 0) {
-      if (p.length !== 0) {
+      if (tree_proof.length !== 0) {
         throw new Error(`errProofFailed`)
       }
-      return [old, old]
+      return [old_tree_root, old_tree_root]
     }
-    if (p.length != 1) {
+    if (tree_proof.length != 1) {
       throw new Error(`errProofFailed`)
     }
-    return [p[0], p[0]]
+    return [tree_proof[0], tree_proof[0]]
   }
 
-  if (p.length == 0) {
+  if (tree_proof.length == 0) {
     throw new Error(`errProofFailed`)
   }
 
   const [k, _] = max_power_2(hi - lo)
   if (record_index <= lo + k) {
-    const [oh, next_hash] = run_tree_proof(th, p.slice(0, p.length - 1), lo, lo + k, record_index, old)
-    return [oh, th.hash_children(next_hash, p[p.length - 1])]
+    const [oh, next_hash] = run_tree_proof(th, tree_proof.slice(0, tree_proof.length - 1), lo, lo + k, record_index, old_tree_root)
+    return [oh, th.hash_children(next_hash, tree_proof[tree_proof.length - 1])]
   } else {
-    const [oh, next_hash] = run_tree_proof(th, p.slice(0, p.length - 1), lo + k, hi, record_index, old)
-    return [th.hash_children(p[p.length - 1], oh), th.hash_children(p[p.length - 1], next_hash)]
+    const [oh, next_hash] = run_tree_proof(th, tree_proof.slice(0, tree_proof.length - 1), lo + k, hi, record_index, old_tree_root)
+    return [th.hash_children(tree_proof[tree_proof.length - 1], oh), th.hash_children(tree_proof[tree_proof.length - 1], next_hash)]
   }
 }
 
@@ -518,7 +518,7 @@ export function new_tree_root_from_tree_proof(th: TreeHash, tree_proof: Uint8Arr
     throw new Error(`tlog: new_tree_size is less than 1 in check_tree`)
   }
   const [reconstructed_old_root, reconstructed_new_root] = run_tree_proof(th, tree_proof, 0, new_tree_size, old_tree_size, old_tree_root)
-  if (to_hex(reconstructed_old_root) == to_hex(old_tree_root)) {
+  if (verify_match(reconstructed_old_root, old_tree_root)) {
     return reconstructed_new_root
   }
   return new Uint8Array()
@@ -526,7 +526,7 @@ export function new_tree_root_from_tree_proof(th: TreeHash, tree_proof: Uint8Arr
 
 export function check_tree(th: TreeHash, tree_proof: Uint8Array[], new_tree_size: number, new_tree_root: Uint8Array, old_tree_size: number, old_tree_root: Uint8Array) {
   const reconstructed_new_tree_root = new_tree_root_from_tree_proof(th, tree_proof, new_tree_size, old_tree_size, old_tree_root)
-  if (to_hex(reconstructed_new_tree_root) == to_hex(new_tree_root)) {
+  if (verify_match(reconstructed_new_tree_root, new_tree_root)) {
     return true
   }
   throw new Error('check_tree failed')
@@ -624,7 +624,7 @@ export class TileHashReader implements HashReader {
       const h = hash_from_tile(this.th, tiles[stxTileOrder[i]], data[stxTileOrder[i]], stx[i])
       next_hash = this.th.hash_children(h, next_hash)
     }
-    if (to_hex(next_hash) != to_hex(this.root)) {
+    if (!verify_match(next_hash, this.root)) {
       throw new Error(`downloaded inconsistent tile`)
     }
 
@@ -637,7 +637,7 @@ export class TileHashReader implements HashReader {
         throw new Error(`bad math in tileHashReader %d %v: lost parent of %v`)
       }
       const h = hash_from_tile(this.th, p, data[j], stored_hash_index(p[1] * p[0], tile[2]))
-      if (to_hex(h) != to_hex(tile_hash(this.th, data[i]))) {
+      if (!verify_match(h, tile_hash(this.th, data[i]))) {
         throw new Error(`downloaded inconsistent tile 2`)
       }
     }
@@ -694,9 +694,9 @@ export class TileLog implements TileStorage, HashReader {
     const [tree_size, record_index, record_proof] = inclusion_proof
     return root_from_record_proof(this.th, record_proof, tree_size, record_index, record_hash)
   }
-  root_from_consistency_proof(old_root: Uint8Array, consistency_proof: ConsistencyProof) {
+  root_from_consistency_proof(old_tree_root: Uint8Array, consistency_proof: ConsistencyProof) {
     const [old_tree_size, new_tree_size, tree_proof] = consistency_proof
-    return new_tree_root_from_tree_proof(this.th, tree_proof, new_tree_size, old_tree_size, old_root)
+    return new_tree_root_from_tree_proof(this.th, tree_proof, new_tree_size, old_tree_size, old_tree_root)
   }
   height() {
     return this.tile_height
