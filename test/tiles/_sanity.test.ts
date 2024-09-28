@@ -44,7 +44,7 @@ it('generate log entries', async () => {
     const message = `entry-${i}`
     const data = new TextEncoder().encode(message)
     entries.push(data)
-    tree.appendData(tree.encodeData(message))
+    tree.append_data(tree.encode_data(message))
   }
   const tileTreeEncoded = tree.hashes[0].map((h) => Buffer.from(h).toString('base64'))
   const oldTreeEncoded = entries.map((h) => Buffer.from(tree.tree_hasher.hash_leaf(h)).toString('base64'))
@@ -60,7 +60,7 @@ it('generate log entries', async () => {
 
   // tree equality from hash at size
   expect(Buffer.from(await treeHead(entries.slice(0, 7))).toString('base64'))
-    .toEqual(Buffer.from(tree.hashAt(7)).toString('base64'))
+    .toEqual(Buffer.from(tree.root_at(7)).toString('base64'))
 })
 
 

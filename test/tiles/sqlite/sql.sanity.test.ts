@@ -152,8 +152,8 @@ it('synchronous apis', async () => {
   const treeSize = 26
   const leafIndex = 17
   const inclusionPath = prove_record(th, treeSize, leafIndex, thr)
-  const inclusionProof = check_record(th, inclusionPath, treeSize, root, leafIndex, leaf)
-  expect(inclusionProof).toBe(true)
+  const inclusion_proof = check_record(th, inclusionPath, treeSize, root, leafIndex, leaf)
+  expect(inclusion_proof).toBe(true)
 
   const oldSize = 17
   const newSize = 26

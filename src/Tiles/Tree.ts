@@ -260,16 +260,16 @@ export function inclusion(index: number, size: number): TreeNodes {
   return skip_first(nodes)
 }
 
-export function consistency(size1: number, size2: number): TreeNodes {
-  if (size1 > size2) {
-    throw new Error(`tree size ${size1} > ${size2}`)
+export function consistency(old_tree_size: number, new_tree_size: number): TreeNodes {
+  if (old_tree_size > new_tree_size) {
+    throw new Error(`tree size ${old_tree_size} > ${new_tree_size}`)
   }
-  if (size1 === size2 && size1 === 0) {
+  if (old_tree_size === new_tree_size && old_tree_size === 0) {
     return { ids: [], begin: 0, end: 0, ephem: [0, 0] }
   }
-  const level = trailing_zeros_64(size1)
-  const index = (size1 - 1) >> level
-  const p = create_nodes(index, level, size2)
+  const level = trailing_zeros_64(old_tree_size)
+  const index = (old_tree_size - 1) >> level
+  const p = create_nodes(index, level, new_tree_size)
   if (index == 0) {
     return skip_first(p)
   }
@@ -311,16 +311,16 @@ export class Tree {
     this.encoder = new TextEncoder()
   }
 
-  encodeData(data: string) {
+  encode_data(data: string) {
     return this.encoder.encode(data)
   }
 
-  appendData(data: Uint8Array) {
+  append_data(data: Uint8Array) {
     const hash = this.tree_hasher.hash_leaf(data)
-    this.appendHash(hash)
+    this.append_record_hash(hash)
   }
 
-  appendHash(hash: Uint8Array) {
+  append_record_hash(hash: Uint8Array) {
     let level = 0
     while (((this.size >> level) & 1) == 1) {
       this.hashes[level].push(hash)
@@ -338,10 +338,10 @@ export class Tree {
   }
 
   hash() {
-    return this.hashAt(this.size)
+    return this.root_at(this.size)
   }
 
-  getNodes(ids: TreeNode[]) {
+  get_nodes(ids: TreeNode[]) {
     const hashes = new Array(ids.length)
     for (const i in ids) {
       const id = ids[i]
@@ -351,11 +351,11 @@ export class Tree {
     return hashes
   }
 
-  hashAt(size: number) {
+  root_at(size: number) {
     if (size === 0) {
       return this.tree_hasher.empty_root()
     }
-    const hashes = this.getNodes(range_nodes(0, size, []))
+    const hashes = this.get_nodes(range_nodes(0, size, []))
     let hash = hashes[hashes.length - 1]
     let i = hashes.length - 2;
     while (i >= 0) {
@@ -365,19 +365,19 @@ export class Tree {
     return hash
   }
 
-  inclusionProof(index: number, size: number) {
-    const nodes = inclusion(index, size)
-    const hashes = this.getNodes(nodes.ids)
+  inclusion_proof(record_index: number, tree_size: number) {
+    const nodes = inclusion(record_index, tree_size)
+    const hashes = this.get_nodes(nodes.ids)
     return rehash(nodes, hashes, this.tree_hasher.hash_children)
   }
 
-  consistencyProof(size1: number, size2: number) {
-    const nodes = consistency(size1, size2)
-    const hashes = this.getNodes(nodes.ids)
+  consistency_proof(old_tree_size: number, new_tree_size: number) {
+    const nodes = consistency(old_tree_size, new_tree_size)
+    const hashes = this.get_nodes(nodes.ids)
     return rehash(nodes, hashes, this.tree_hasher.hash_children)
   }
 
-  getTile(height: number, level: number, index: number, width?: number) {
+  get_tile(height: number, level: number, index: number, width?: number) {
     if (!width) {
       width = 2 ** height
     }

@@ -9,7 +9,7 @@ it('interop generate', () => {
 
   for (let i = 0; i < 10; i++) {
     const entry = `entry-${i}`
-    tree.appendData(tree.encodeData(entry))
+    tree.append_data(tree.encode_data(entry))
   }
 
   const size1 = tree.size
@@ -17,37 +17,37 @@ it('interop generate', () => {
 
   // start
   const start = 0
-  const ip1 = tree.inclusionProof(start, size1)
+  const ip1 = tree.inclusion_proof(start, size1)
   const sip1 = pretty_inclusion_proof(start, ip1, root1, size1)
   fs.writeFileSync('./test/tiles/from-ts/sip1.json', JSON.stringify(sip1, null, 2))
 
   // middle
   const middle = size1 / 2
-  const ip2 = tree.inclusionProof(middle, size1)
+  const ip2 = tree.inclusion_proof(middle, size1)
   const sip2 = pretty_inclusion_proof(middle, ip2, root1, size1)
   fs.writeFileSync('./test/tiles/from-ts/sip2.json', JSON.stringify(sip2, null, 2))
 
   // end
   let end = size1 - 1
-  const ip3 = tree.inclusionProof(end, size1)
+  const ip3 = tree.inclusion_proof(end, size1)
   const sip3 = pretty_inclusion_proof(end, ip3, root1, size1)
   fs.writeFileSync('./test/tiles/from-ts/sip3.json', JSON.stringify(sip3, null, 2))
 
 
   for (let i = 10; i < 20; i++) {
     const entry = `entry-${i}`
-    tree.appendData(tree.encodeData(entry))
+    tree.append_data(tree.encode_data(entry))
   }
   const root2 = tree.hash()
   const size2 = tree.size
 
   // end
   end = size2 - 1
-  const ip4 = tree.inclusionProof(end, size2)
+  const ip4 = tree.inclusion_proof(end, size2)
   const sip4 = pretty_inclusion_proof(end, ip4, root2, size2)
   fs.writeFileSync('./test/tiles/from-ts/sip4.json', JSON.stringify(sip4, null, 2))
 
-  const cp1 = tree.consistencyProof(size1, size2)
+  const cp1 = tree.consistency_proof(size1, size2)
   const scp1 = pretty_consistency_proof(root1, size1, cp1, root2, size2)
   fs.writeFileSync('./test/tiles/from-ts/scp1.json', JSON.stringify(scp1, null, 2))
 
@@ -65,7 +65,7 @@ describe('tree size', () => {
   const tree = new Tree(tree_hasher)
   for (let i = 0; i < 10; i++) {
     const entry = `entry-${i}`
-    tree.appendData(tree.encodeData(entry))
+    tree.append_data(tree.encode_data(entry))
     it(`${tree.size}`, () => {
       const calcRoot = Buffer.from(tree.hash()).toString('base64')
       const expectedRoot = interopSizeToRoot[`${tree.size}`]
@@ -76,21 +76,21 @@ describe('tree size', () => {
 
 it('sanity', () => {
   const tree = new Tree(tree_hasher)
-  tree.appendData(tree.encodeData('L123456'))
+  tree.append_data(tree.encode_data('L123456'))
   const r0 = tree.hash()
   expect(to_hex(r0)).toBe('395aa064aa4c29f7010acfe3f25db9485bbd4b91897b6ad7ad547639252b4d56')
-  tree.appendData(tree.encodeData('L789'))
+  tree.append_data(tree.encode_data('L789'))
   const r1 = tree.hash()
   expect(to_hex(r1)).toBe('1798faa3eb85affab608a28cf885a24a13af4ec794fe3abec046f21b7a799bec')
-  const ip0 = tree.inclusionProof(0, 2)
+  const ip0 = tree.inclusion_proof(0, 2)
   expect(pretty_proof(ip0)).toEqual(["12250d7a57ba6166c61b0b135fc2c21f096f918b69a42d673d812798d9c5d693"])
-  const lh0 = tree_hasher.hash_leaf(tree.encodeData('L123456'))
+  const lh0 = tree_hasher.hash_leaf(tree.encode_data('L123456'))
   const ip0v = verify_inclusion(tree_hasher, 0, 2, lh0, ip0, r1)
   expect(ip0v).toBe(true)
-  tree.appendData(tree.encodeData('L012'))
+  tree.append_data(tree.encode_data('L012'))
   const r2 = tree.hash()
   expect(to_hex(r2)).toBe('3322c85256086aa0e1984dff85eab5f1e11d4b8fbbd6c4510611e3bbab0e132a')
-  const cp0 = tree.consistencyProof(2, 3)
+  const cp0 = tree.consistency_proof(2, 3)
   expect(pretty_proof(cp0)).toEqual(["4852d9c133177e783c92ef70b3f7ca23d7e8f4b5dc02d415b5c7ea6426db046e"])
   const cp0v = verify_consistency(tree_hasher, 2, 3, cp0, r1, r2)
   expect(cp0v).toBe(true)
@@ -106,25 +106,25 @@ describe('TestTreeIncremental', () => {
   it('the empty leaf hash', () => {
     const leaf = new Uint8Array()
     const leafHash = tree_hasher.hash_leaf(leaf)
-    tree.appendHash(leafHash)
+    tree.append_record_hash(leafHash)
     expect(to_hex(tree.hash())).toBe('6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d')
   })
 
   it('the first intermediate / root', () => {
-    const leaf = tree.encodeData(`entry-1`)
+    const leaf = tree.encode_data(`entry-1`)
     const leafHash = tree_hasher.hash_leaf(leaf)
     expect(to_hex(leafHash)).toBe(`e868811a482c27d50b6d45dde79c465d6adb9b06645100477a90cf3d8518898b`)
-    tree.appendHash(leafHash)
+    tree.append_record_hash(leafHash)
     expect(to_hex(tree.hash())).toBe('ef2154dde385935cccbaa4129960d8fb571ae75737203e70252c47431d0b2e3e')
   })
 
   it('the first unbalanced root', () => {
-    tree.appendData(tree.encodeData(`entry-${2}`))
+    tree.append_data(tree.encode_data(`entry-${2}`))
     expect(to_hex(tree.hash())).toBe('74d80c0d37c9d19475c2c3e6d3183ebd39031191bbd16571e2db0e4a5f999c4f')
   })
 
   it('the second unbalanced root', () => {
-    tree.appendData(tree.encodeData(`entry-${3}`))
+    tree.append_data(tree.encode_data(`entry-${3}`))
     expect(to_hex(tree.hash())).toBe('c34777e9c093d8a7b9907621cf12f7c868a1beb196d09a866f36933849832705')
   })
 })
@@ -134,7 +134,7 @@ describe('hash_from_tile', () => {
   const tree = new Tree(tree_hasher)
   for (let i = 0; i < 26; i++) {
     const entry = `entry-${i}`
-    tree.appendData(tree.encodeData(entry))
+    tree.append_data(tree.encode_data(entry))
   }
   const rawData = tree.hashes[0].reduce(concat)
   it('first hash, from first tile', () => {
