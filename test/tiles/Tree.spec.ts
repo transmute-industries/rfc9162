@@ -1,8 +1,8 @@
 import fs from 'fs'
 
-import { Tree, verify_inclusion, verify_consistency, to_hex, pretty_inclusion_proof, pretty_consistency_proof, pretty_proof, tile_for_storage_id, concat, hash_from_tile } from "../../src";
+import { Tree, verify_inclusion, verify_consistency, to_hex, tile_for_storage_id, concat, hash_from_tile } from "../../src";
 
-import { th } from './test_utils';
+import { th, pretty_inclusion_proof, pretty_consistency_proof, pretty_proof, } from './test_utils';
 
 it('interop generate', () => {
   const tree = new Tree(th)

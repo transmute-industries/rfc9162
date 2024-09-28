@@ -311,50 +311,6 @@ export function rehash(nodes: TreeNodes, hashes: Uint8Array[], hash_children: Ha
 }
 
 
-export function pretty_proof(hashes: Uint8Array[]) {
-  return hashes.map((h) => {
-    return to_hex(h)
-  })
-}
-
-export function pretty_tile(hashes: Uint8Array[]) {
-  return hashes.map((h) => {
-    return Buffer.from(h).toString('base64')
-  })
-}
-
-export function pretty_level(level: number, hashes: Uint8Array[][]) {
-  return JSON.stringify({
-    level,
-    hashes: hashes[level].map((p) => {
-      return Buffer.from(p).toString('base64')
-    })
-  }, null, 2)
-}
-
-export function pretty_inclusion_proof(leaf: number, proof: Uint8Array[], root: Uint8Array, size: number) {
-  return {
-    leaf,
-    proof: proof.map((p) => {
-      return Buffer.from(p).toString('base64')
-    }),
-    root: Buffer.from(root).toString('base64'),
-    size
-  }
-}
-
-export function pretty_consistency_proof(root1: Uint8Array, size1: number, proof: Uint8Array[], root2: Uint8Array, size2: number,) {
-  return {
-    root1: Buffer.from(root1).toString('base64'),
-    size1,
-    proof: proof.map((p) => {
-      return Buffer.from(p).toString('base64')
-    }),
-    root2: Buffer.from(root2).toString('base64'),
-    size2,
-  }
-}
-
 export class Tree {
   public size: number
   public encoder: TextEncoder

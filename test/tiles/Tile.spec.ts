@@ -3,7 +3,7 @@ import {
   tile_for_storage_id,
   hash_from_tile,
   to_hex,
-  pretty_hash, new_tiles,
+  new_tiles,
   create_tile,
   read_tile_data, stored_hash_count,
   stored_hashes, stored_hash_index,
@@ -17,7 +17,7 @@ import {
   check_tree
 } from "../../src";
 
-import { th, TestTileStorage, encode } from './test_utils';
+import { th, TestTileStorage, encode, pretty_hash } from './test_utils';
 
 
 const tile_height = 2

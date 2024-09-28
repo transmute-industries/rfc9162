@@ -3,7 +3,7 @@
 
 import { trailing_zeros_64 } from "./Tree"
 
-import { TreeHash, concat, intermediate_prefix, to_hex } from "./TreeHash"
+import { TreeHash, concat, to_hex } from "./TreeHash"
 
 export interface HashReader {
   read_hashes: (indexes: number[]) => Uint8Array[]
@@ -21,13 +21,7 @@ export function create_tile(height: number, level: number, hash_number: number, 
   return [height, level, hash_number, width] as Tile
 }
 
-export const pretty_hash = (hash: Uint8Array) => {
-  return Buffer.from(hash).toString('base64')
-}
 
-export const pretty_hashes = (hashes: Uint8Array[]) => {
-  return hashes.map(pretty_hash)
-}
 
 export function stored_hash_index(level: number, hash_number: number) {
   for (let l = level; l > 0; l--) {
@@ -746,9 +740,6 @@ export class TileLog implements TileStorage, HashReader {
   }
   root_at(tree_size: number) {
     return tree_hash(this.th, tree_size, this)
-  }
-  head() {
-    return Buffer.from(this.root()).toString('base64')
   }
   write_record_hashes = (record_hashes: Uint8Array[]) => {
     for (const record_hash of record_hashes) {
