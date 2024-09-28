@@ -1,8 +1,7 @@
 
 
-import { TreeHash, to_hex } from "./Tile"
 
-
+import { TreeHash, to_hex } from "./TreeHash";
 
 // not efficient
 const count_trailing_0 = (n: number) => {

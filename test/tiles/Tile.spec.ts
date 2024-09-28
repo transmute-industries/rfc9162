@@ -20,8 +20,6 @@ import {
 import { th, TestTileStorage, encode } from './test_utils';
 
 
-
-
 const tile_height = 2
 let all_tree_hashes_stored = [] as Uint8Array[]
 const storage = {
