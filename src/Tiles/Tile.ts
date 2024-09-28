@@ -47,11 +47,11 @@ export function stored_hash_index(level: number, n: number) {
   return i + level
 }
 
-export function split_stored_hash_index(index: number) {
-  let n = Math.ceil(index / 2)
+export function split_stored_hash_index(hash_index: number) {
+  let n = Math.ceil(hash_index / 2)
   let index_hash_number = stored_hash_index(0, n)
   index_hash_number = Math.ceil(index_hash_number)
-  if (index_hash_number > index) {
+  if (index_hash_number > hash_index) {
     throw new Error('bad math')
   }
 
@@ -60,32 +60,32 @@ export function split_stored_hash_index(index: number) {
   while (true) {
     x = index_hash_number + 1 + trailing_zeros_64(n + 1)
     // console.log({x, index_hash_number, n1: n+1})
-    if (x > index) {
+    if (x > hash_index) {
       break
     }
     n++
     index_hash_number = x
   }
-  const level = index - index_hash_number
+  const level = hash_index - index_hash_number
   n = n >> level
   return [level, n]
 }
 
-export function tile_for_storage_id(h: number, storage_id: number): [Tile, number, number] {
-  if (h < 0) {
-    throw new Error(`tile_for_storage_id: invalid height ${h}`)
+export function tile_for_storage_id(height: number, storage_id: number): [Tile, number, number] {
+  if (height < 0) {
+    throw new Error(`tile_for_storage_id: invalid height ${height}`)
   }
-  const tile_height = h
+  const tile_height = height
   let [level, n] = split_stored_hash_index(storage_id)
-  const tileLevel = Math.floor(level / h)
-
-  // let tile = [tile_height, tileLevel, tileIndex, tileWidth] as any
-  level -= tileLevel * h
-  const tileIndex = n << level >> h
-  n -= tileIndex << tile_height >> level
-  const tileWidth = (n + 1) >> 0 << level
-
-  return [createTile(tile_height, tileLevel, tileIndex, tileWidth), (n << level) * hash_size, ((n + 1) << level) * hash_size]
+  const tile_level = Math.floor(level / height)
+  level -= tile_level * height
+  const hash_number = n << level >> height
+  n -= hash_number << tile_height >> level
+  const tile_width = (n + 1) >> 0 << level
+  const start = (n << level) * hash_size
+  const end = ((n + 1) << level) * hash_size
+  const tile = createTile(tile_height, tile_level, hash_number, tile_width)
+  return [tile, start, end]
 }
 
 export function tile_to_path(tile: Tile) {
