@@ -5,6 +5,13 @@ import { TreeHash, to_hex } from "./TreeHash";
 
 
 
+export type TreeNode = [number, number]
+
+export function create_tree_node(level: number, index: number) {
+  return [level, index] as TreeNode
+}
+
+
 // not efficient
 export function trailing_zeros_64(n: number) {
   const ns = n.toString(2)
@@ -42,22 +49,17 @@ export function range_size(begin: number, end: number) {
   return ones_count_64(left) + ones_count_64(right)
 }
 
-export type TreeNode = [number, number]
-
-export function TreeNode(level: number, index: number) {
-  return [level, index] as TreeNode
-}
 
 export function node_parent([level, index]: TreeNode) {
-  return TreeNode(level + 1, index >> 1)
+  return create_tree_node(level + 1, index >> 1)
 }
 
 export function node_sibling([level, index]: TreeNode) {
-  return TreeNode(level, index ^ 1)
+  return create_tree_node(level, index ^ 1)
 }
 
 export function node_coverage([level, index]: TreeNode) {
-  return TreeNode(index << level, (index + 1) << level)
+  return create_tree_node(index << level, (index + 1) << level)
 }
 
 export function range_nodes(begin: number, end: number, ids: TreeNode[]) {
@@ -103,11 +105,11 @@ function skip_first(nodes: TreeNodes) {
 
 export function create_nodes(index: number, level: number, size: number): TreeNodes {
   const inner = length_64(index ^ (size >> level)) - 1
-  const fork = TreeNode(level + inner, index >> inner)
+  const fork = create_tree_node(level + inner, index >> inner)
   const [begin, end] = node_coverage(fork)
   const left = range_size(0, begin)
   const right = range_size(end, size)
-  let node = TreeNode(level, index)
+  let node = create_tree_node(level, index)
   let nodes = [node]
   while (node[0] < fork[0]) {
     nodes.push(node_sibling(node))
