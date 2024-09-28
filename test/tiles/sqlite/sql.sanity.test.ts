@@ -1,4 +1,4 @@
-
+import crypto from 'crypto'
 import sqlite from 'better-sqlite3'
 import {
   stored_hashes,
@@ -12,7 +12,8 @@ import {
   check_record,
   prove_tree,
   stored_hash_index,
-  check_tree
+  check_tree,
+  Hash
 } from "../../../src";
 
 
@@ -84,10 +85,15 @@ WHERE hash = x'${Buffer.from(hash).toString('hex')}'
 
 const encoder = new TextEncoder();
 
+const th = new Hash((data: Uint8Array) => {
+  return new Uint8Array(crypto.createHash('sha256').update(data).digest());
+}, 32)
+
+
 class SQLHashStorage {
   constructor(public db: any) { }
   writeData(index: number, data: Uint8Array,) {
-    const hashes = stored_hashes(index, data, this)
+    const hashes = stored_hashes(th, index, data, this)
     write_hashes(this.db, hashes)
   }
   read_hashes(indexes: number[]) {
@@ -137,10 +143,10 @@ it('synchronous apis', async () => {
 
   const tileReader = new SQLTileReader(hashReader)
   prepare(db)
-  const root = tree_hash(26, hashReader)
-  const thr = new TileHashReader(26, root, tileReader)
+  const root = tree_hash(th, 26, hashReader)
+  const thr = new TileHashReader(26, root, tileReader, th)
   const storageID = stored_hash_index(0, 17)
-  const leaf = record_hash(encoder.encode(`entry-17`))
+  const leaf = record_hash(th, encoder.encode(`entry-17`))
   const h0 = find_index_for_hash(db, leaf) as any
   expect(h0?.id).toBe(storageID)
   const hash = get_stored_hash_by_index(db, storageID)
@@ -148,16 +154,16 @@ it('synchronous apis', async () => {
 
   const treeSize = 26
   const leafIndex = 17
-  const inclusionPath = prove_record(treeSize, leafIndex, thr)
-  const inclusionProof = check_record(inclusionPath, treeSize, root, leafIndex, leaf)
+  const inclusionPath = prove_record(th, treeSize, leafIndex, thr)
+  const inclusionProof = check_record(th, inclusionPath, treeSize, root, leafIndex, leaf)
   expect(inclusionProof).toBe(true)
 
   const oldSize = 17
   const newSize = 26
-  const oldRoot = tree_hash(17, hashReader)
-  const newRoot = tree_hash(26, hashReader)
-  const consistencyPath = prove_tree(newSize, oldSize, thr)
-  const c = check_tree(consistencyPath, newSize, newRoot, oldSize, oldRoot)
+  const oldRoot = tree_hash(th, 17, hashReader)
+  const newRoot = tree_hash(th, 26, hashReader)
+  const consistencyPath = prove_tree(th, newSize, oldSize, thr)
+  const c = check_tree(th, consistencyPath, newSize, newRoot, oldSize, oldRoot)
   expect(c).toBe(true)
 
 })

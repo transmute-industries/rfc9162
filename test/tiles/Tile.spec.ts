@@ -27,10 +27,36 @@ it('tile_for_storage_id', () => {
 })
 
 
+const th = new Hash((data: Uint8Array) => {
+  return new Uint8Array(crypto.createHash('sha256').update(data).digest());
+}, 32)
+
+
+class TestTileStorage implements TileReader {
+  public unsaved = 0
+  constructor(public tiles: Record<string, Uint8Array>) { }
+  height() { return 2 }  // testHeight
+  read_tiles(tiles: Tile[]) {
+    const out = [] as any
+    for (let i = 0; i < tiles.length; i++) {
+      const tile = tiles[i]
+      const tileName = tile_to_path(tile)
+      // console.log(tileName)
+      const hasTile = this.tiles[tileName]
+      out.push(hasTile)
+    }
+    this.unsaved += tiles.length
+
+    return out
+  }
+  save_tiles(tiles: Tile[]) {
+    // fake persist on client.
+    this.unsaved -= tiles.length
+  }
+}
+
 describe('hash_from_tile', () => {
-  const th = new Hash((data: Uint8Array) => {
-    return new Uint8Array(crypto.createHash('sha256').update(data).digest());
-  }, 32)
+
   const tree = new Tree(th)
   for (let i = 0; i < 26; i++) {
     const entry = `entry-${i}`
@@ -42,7 +68,7 @@ describe('hash_from_tile', () => {
     const [tile] = tile_for_storage_id(2, index)
     expect(
       to_hex(
-        hash_from_tile(tile, rawData, index)
+        hash_from_tile(th, tile, rawData, index)
       ))
       .toBe(
         Buffer.from('QHZrIDNCkCb1PVRQJnmoOXBrR0H43K86i7pfQbX/4HU=', 'base64').toString('hex')
@@ -53,7 +79,7 @@ describe('hash_from_tile', () => {
     const [tile,] = tile_for_storage_id(2, index)
     expect(
       to_hex(
-        hash_from_tile(tile, rawData, index)
+        hash_from_tile(th, tile, rawData, index)
       ))
       .toBe(
         Buffer.from('6GiBGkgsJ9ULbUXd55xGXWrbmwZkUQBHepDPPYUYiYs=', 'base64').toString('hex')
@@ -65,7 +91,7 @@ describe('hash_from_tile', () => {
     const [tile] = tile_for_storage_id(2, index)
     expect(
       to_hex(
-        hash_from_tile(tile, rawData, index)
+        hash_from_tile(th, tile, rawData, index)
       ))
       .toBe(
         Buffer.from('LyelCCwdQq+kiKw1Cp/EOQwIT1T3Hs3/hZ6Y24QptHk=', 'base64').toString('hex')
@@ -77,7 +103,7 @@ describe('hash_from_tile', () => {
     const [tile] = tile_for_storage_id(2, index)
     expect(
       to_hex(
-        hash_from_tile(tile, rawData, index)
+        hash_from_tile(th, tile, rawData, index)
       ))
       .toBe(
         Buffer.from('BJ19zbVrz+vTEzBMmDnxlqPUtu873AsIKY+TrIGR8Kg=', 'base64').toString('hex')
@@ -89,7 +115,7 @@ describe('hash_from_tile', () => {
     const [tile] = tile_for_storage_id(2, index)
     expect(
       to_hex(
-        hash_from_tile(tile, rawData, index)
+        hash_from_tile(th, tile, rawData, index)
       ))
       .toBe(
         Buffer.from('J0ebarMh0u5HdFL2i6UndI6GPK/o+9HfK/idFXDRtpc=', 'base64').toString('hex')
@@ -125,33 +151,28 @@ describe('TestTiledTree', () => {
     }
     for (let i = 0; i < 100; i++) {
       const data = encoder.encode(`leaf ${i}`)
-      leafHashes.push(record_hash(data))
+      leafHashes.push(record_hash(th, data))
       const oldStorage = storedHashes.length
-      const hashes = stored_hashes(i, data, storage)
-
-
+      const hashes = stored_hashes(th, i, data, storage)
       storedHashes = [...storedHashes, ...hashes]
-
-
       if (stored_hash_count(i + 1) != storedHashes.length) {
         throw new Error('Storage is more clever: ')
       }
-
-      const th = tree_hash(i + 1, storage)
+      const tree_head = tree_hash(th, i + 1, storage)
       if (i == 0) {
-        expect(pretty_hash(th)).toBe("G7l9zCFjXUfiZj79/QoXRobZjdcBNS3SzQbotD/T0wU=")
+        expect(pretty_hash(tree_head)).toBe("G7l9zCFjXUfiZj79/QoXRobZjdcBNS3SzQbotD/T0wU=")
       }
       if (i == 1) {
-        expect(pretty_hash(th)).toBe("/F9riP+FVPdbsvnm85wxsZNtRLaSdu33sSBalVuXYeM=")
+        expect(pretty_hash(tree_head)).toBe("/F9riP+FVPdbsvnm85wxsZNtRLaSdu33sSBalVuXYeM=")
       }
       if (i == 2) {
-        expect(pretty_hash(th)).toBe("1Pksj7uJcg6ztVZ3x9fvrd/rENEaGoSguo8aIzN/qpU=")
+        expect(pretty_hash(tree_head)).toBe("1Pksj7uJcg6ztVZ3x9fvrd/rENEaGoSguo8aIzN/qpU=")
       }
       if (i == 3) {
-        expect(pretty_hash(th)).toBe("T2MQhKFXxU9U/Psj/164ZQxLoWDClbsTqYMrEJ1SZ34=")
+        expect(pretty_hash(tree_head)).toBe("T2MQhKFXxU9U/Psj/164ZQxLoWDClbsTqYMrEJ1SZ34=")
       }
       if (i == 4) {
-        expect(pretty_hash(th)).toBe("NBUVmC1lDiNSDb1U1/zwr6G3DMOhakEdRk3JwayWwwE=")
+        expect(pretty_hash(tree_head)).toBe("NBUVmC1lDiNSDb1U1/zwr6G3DMOhakEdRk3JwayWwwE=")
       }
 
       for (const tile of new_tiles(testH, i, i + 1)) {
@@ -182,22 +203,22 @@ describe('TestTiledTree', () => {
         if (!data) {
           throw new Error(`tile_for_storage_id(${testH}, ${j}) = ${tile_to_path(tile)}, not yet stored (i=${i}, stored ${storedHashes.length})`)
         }
-        const h = hash_from_tile(tile, data, j)
+        const h = hash_from_tile(th, tile, data, j)
         if (to_hex(h) !== to_hex(storedHashes[j])) {
           throw new Error(`hash_from_tile(${tile_to_path(tile)}, ${j}) = ${h}, want ${storedHashes[j]}`)
         }
       }
 
-      trees.push(th)
+      trees.push(tree_head)
 
       for (let j = 0; j <= i; j++) {
-        const p = prove_record(i + 1, j, storage)
-        if (!check_record(p, i + 1, th, j, leafHashes[j])) {
+        const p = prove_record(th, i + 1, j, storage)
+        if (!check_record(th, p, i + 1, tree_head, j, leafHashes[j])) {
           throw new Error(`check_record(${i + 1}, ${j}) failed`)
         }
         for (let k = 0; k < p.length; k++) {
           p[k][0] ^= 1 // break it
-          if (check_record(p, i + 1, th, j, leafHashes[j])) {
+          if (check_record(th, p, i + 1, tree_head, j, leafHashes[j])) {
             throw new Error(`check_record(${i + 1}, ${j}) succeeded with corrupt proof hash #${k}!`)
           }
           p[k][0] ^= 1 // fix it
@@ -207,7 +228,7 @@ describe('TestTiledTree', () => {
 
       // To prove a leaf that way, all you have to do is read and verify its hash.
       const tileStorage = new TestTileStorage(tiles)
-      const thr = new TileHashReader(i + 1, th, tileStorage)
+      const thr = new TileHashReader(i + 1, tree_head, tileStorage, th)
       for (let j = 0; j <= i; j++) {
         const h = thr.read_hashes([stored_hash_index(0, j)])
         if (to_hex(h[0]) != to_hex(leafHashes[j])) {
@@ -216,8 +237,8 @@ describe('TestTiledTree', () => {
 
         // Even though reading the hash suffices,
         // check we can generate the proof too.
-        const p = prove_record(i + 1, j, thr)
-        if (!check_record(p, i + 1, th, j, leafHashes[j])) {
+        const p = prove_record(th, i + 1, j, thr)
+        if (!check_record(th, p, i + 1, tree_head, j, leafHashes[j])) {
           throw new Error(`check_record(%d, %d, TileHashReader(%d)): %v`)
         }
       }
@@ -234,15 +255,15 @@ describe('TestTiledTree', () => {
         throw new Error(`TileHashReader(%d) did not save %d tiles`)
       }
       for (let j = 0; j <= i; j++) {
-        const h = tree_hash(j + 1, thr)
+        const h = tree_hash(th, j + 1, thr)
         if (to_hex(h) != to_hex(trees[j])) {
           throw new Error(`"tree_hash(%d, TileHashReader(%d)) = %x, want %x (%v)`)
         }
 
         // Even though computing the subtree hash suffices,
         // check that we can generate the proof too.
-        const p = prove_tree(i + 1, j + 1, thr)
-        const ct = check_tree(p, i + 1, th, j + 1, trees[j])
+        const p = prove_tree(th, i + 1, j + 1, thr)
+        const ct = check_tree(th, p, i + 1, tree_head, j + 1, trees[j])
         if (!ct) {
           throw new Error(`"check_tree(%d, %d): %v [%v]`)
         }
@@ -250,7 +271,7 @@ describe('TestTiledTree', () => {
         for (let k = 0; k < p.length; k++) {
           p[k][0] ^= 1 // break
           try {
-            check_tree(p, i + 1, th, j + 1, trees[j]) // test
+            check_tree(th, p, i + 1, tree_head, j + 1, trees[j]) // test
           } catch (e) {
             expect((e as any).message).toBe('check_tree failed')
           }
@@ -264,26 +285,3 @@ describe('TestTiledTree', () => {
   })
 
 })
-
-class TestTileStorage implements TileReader {
-  public unsaved = 0
-  constructor(public tiles: Record<string, Uint8Array>) { }
-  height() { return 2 }  // testHeight
-  read_tiles(tiles: Tile[]) {
-    const out = [] as any
-    for (let i = 0; i < tiles.length; i++) {
-      const tile = tiles[i]
-      const tileName = tile_to_path(tile)
-      // console.log(tileName)
-      const hasTile = this.tiles[tileName]
-      out.push(hasTile)
-    }
-    this.unsaved += tiles.length
-
-    return out
-  }
-  save_tiles(tiles: Tile[]) {
-    // fake persist on client.
-    this.unsaved -= tiles.length
-  }
-}

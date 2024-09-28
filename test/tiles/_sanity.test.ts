@@ -1,7 +1,7 @@
 import crypto from 'crypto'
 
 import { treeHead } from '../../src/RFC9162';
-
+import { Tree, Hash } from "../../src";
 import { tile_for_storage_id, tile_to_path, TileLog } from '../../src/Tiles/Tile';
 
 const global_tiles = {} as Record<string, Uint8Array>
@@ -29,6 +29,12 @@ const read_tile = (tile: string): Uint8Array => {
   }
   return new Uint8Array(32)
 }
+
+const th = new Hash((data: Uint8Array) => {
+  return new Uint8Array(crypto.createHash('sha256').update(data).digest());
+}, 32)
+
+
 
 const update_tiles = (storage_id: number, stored_hash: Uint8Array) => {
   const [tile, start, end] = tile_for_storage_id(2, storage_id)
@@ -87,4 +93,31 @@ it('only persist tiles', async () => {
 
   const reconstructed_new_root = log.root_from_consistency_proof(root_at_20, consistency_proof)
   expect(reconstructed_new_root).toEqual(log.root())
+})
+
+
+it('generate log entries', async () => {
+  const tree = new Tree(th)
+  const entries: Uint8Array[] = []
+  for (let i = 0; i < 26; i++) {
+    const message = `entry-${i}`
+    const data = new TextEncoder().encode(message)
+    entries.push(data)
+    tree.appendData(tree.encodeData(message))
+  }
+  const tileTreeEncoded = tree.hashes[0].map((h) => Buffer.from(h).toString('base64'))
+  const oldTreeEncoded = entries.map((h) => Buffer.from(tree.th.hash_leaf(h)).toString('base64'))
+  // tree equality from leaf equality
+  expect(tileTreeEncoded)
+    .toEqual(oldTreeEncoded)
+  // tree equality by root comparison
+  expect(Buffer.from(await treeHead(entries)).toString('hex'))
+    .toEqual(Buffer.from(tree.hash()).toString('hex'))
+
+  expect(Buffer.from(await treeHead(entries)).toString('base64'))
+    .toBe('eMR1/fvh2IykZmA/Q7o3SypidfJRgnhWN5SPTPSeNeE=')
+
+  // tree equality from hash at size
+  expect(Buffer.from(await treeHead(entries.slice(0, 7))).toString('base64'))
+    .toEqual(Buffer.from(tree.hashAt(7)).toString('base64'))
 })
