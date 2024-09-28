@@ -7,9 +7,8 @@ import {
   create_tile,
   read_tile_data, stored_hash_count,
   stored_hashes, stored_hash_index,
-  record_hash, tree_hash,
+  tree_hash,
   tile_to_path,
-  tile_bytes_are_equal,
   prove_record,
   check_record,
   TileHashReader,
@@ -17,7 +16,7 @@ import {
   check_tree
 } from "../../src";
 
-import { th, TestTileStorage, encode, pretty_hash } from './test_utils';
+import { th, TestTileStorage, encode, pretty_hash, tile_bytes_are_equal } from './test_utils';
 
 
 const tile_height = 2
@@ -36,7 +35,7 @@ describe('TestTiledTree', () => {
     const record_hashes = [] as Uint8Array[]
     for (let i = 0; i < 100; i++) {
       const data = encode(`leaf ${i}`)
-      record_hashes.push(record_hash(th, data))
+      record_hashes.push(th.hash_leaf(data))
       const old_storage_length = all_tree_hashes_stored.length
       const hashes = stored_hashes(th, i, data, storage)
       all_tree_hashes_stored = [...all_tree_hashes_stored, ...hashes]

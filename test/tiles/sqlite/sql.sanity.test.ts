@@ -8,7 +8,6 @@ import {
   tree_hash,
   TileHashReader,
   prove_record,
-  record_hash,
   check_record,
   prove_tree,
   stored_hash_index,
@@ -144,7 +143,7 @@ it('synchronous apis', async () => {
   const root = tree_hash(th, 26, hashReader)
   const thr = new TileHashReader(26, root, tileReader, th)
   const storageID = stored_hash_index(0, 17)
-  const leaf = record_hash(th, encoder.encode(`entry-17`))
+  const leaf = th.hash_leaf(encoder.encode(`entry-17`))
   const h0 = find_index_for_hash(db, leaf)
   expect(h0?.id).toBe(storageID)
   const hash = get_stored_hash_by_index(db, storageID)

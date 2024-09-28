@@ -21,8 +21,6 @@ export function create_tile(height: number, level: number, hash_number: number, 
   return [height, level, hash_number, width] as Tile
 }
 
-
-
 export function stored_hash_index(level: number, hash_number: number) {
   for (let l = level; l > 0; l--) {
     hash_number = 2 * hash_number + 1
@@ -35,24 +33,24 @@ export function stored_hash_index(level: number, hash_number: number) {
   return i + level
 }
 
-export function split_stored_hash_index(hash_index: number) {
-  let hash_number = Math.ceil(hash_index / 2)
+export function split_stored_hash_index(record_hash_index: number) {
+  let hash_number = Math.ceil(record_hash_index / 2)
   let index_hash_number = stored_hash_index(0, hash_number)
   index_hash_number = Math.ceil(index_hash_number)
-  if (index_hash_number > hash_index) {
+  if (index_hash_number > record_hash_index) {
     throw new Error('bad math')
   }
   let x
   // eslint-disable-next-line no-constant-condition
   while (true) {
     x = index_hash_number + 1 + trailing_zeros_64(hash_number + 1)
-    if (x > hash_index) {
+    if (x > record_hash_index) {
       break
     }
     hash_number++
     index_hash_number = x
   }
-  const level = hash_index - index_hash_number
+  const level = record_hash_index - index_hash_number
   hash_number = hash_number >> level
   return [level, hash_number]
 }
@@ -115,15 +113,15 @@ export function tile_hash(th: TreeHash, data: Uint8Array): Uint8Array {
   )
 }
 
-export function new_tiles(h: number, oldTreeSize: number, newTreeSize: number) {
+export function new_tiles(h: number, old_tree_size: number, new_tree_size: number) {
   if (h < 0) {
     throw new Error(`new_tiles: invalid height ${h}`)
   }
   const H = h
   const tiles = [] as Tile[]
-  for (let level = 0; (newTreeSize >> (H * level)) > 0; level++) {
-    const oldN = oldTreeSize >> (H * level)
-    const newN = newTreeSize >> (H * level)
+  for (let level = 0; (new_tree_size >> (H * level)) > 0; level++) {
+    const oldN = old_tree_size >> (H * level)
+    const newN = new_tree_size >> (H * level)
     if (oldN == newN) {
       continue
     }
@@ -157,23 +155,23 @@ export function read_tile_data(tile: Tile, r: HashReader) {
   return tileData
 }
 
-export function stored_hash_count(n: number) {
-  if (n === 0) {
+export function stored_hash_count(record_hash_number: number) {
+  if (record_hash_number === 0) {
     return 0
   }
-  let numHash = stored_hash_index(0, n - 1) + 1
-  for (let i = n - 1; (i & 1) != 0; i >>= 1) {
-    numHash++
+  let num_hash = stored_hash_index(0, record_hash_number - 1) + 1
+  for (let i = record_hash_number - 1; (i & 1) != 0; i >>= 1) {
+    num_hash++
   }
-  return numHash
+  return num_hash
 }
 
-export function stored_hashes_for_record_hash(th: TreeHash, n: number, h: Uint8Array, r: HashReader) {
+export function stored_hashes_for_record_hash(th: TreeHash, record_hash_number: number, h: Uint8Array, r: HashReader) {
   const hashes = [h] as Uint8Array[]
-  const m = trailing_zeros_64(n + 1)
+  const m = trailing_zeros_64(record_hash_number + 1)
   const indexes = new Array(m).fill(0)
   for (let i = 0; i < m; i++) {
-    const next = (n >> i) - 1
+    const next = (record_hash_number >> i) - 1
     indexes[m - 1 - i] = stored_hash_index(i, next)
   }
   const old = r.read_hashes(indexes)
@@ -184,12 +182,10 @@ export function stored_hashes_for_record_hash(th: TreeHash, n: number, h: Uint8A
   return hashes
 }
 
-export function record_hash(th: TreeHash, data: Uint8Array) {
-  return th.hash_leaf(data)
-}
 
-export function stored_hashes(th: TreeHash, n: number, data: Uint8Array, r: HashReader) {
-  return stored_hashes_for_record_hash(th, n, record_hash(th, data), r)
+
+export function stored_hashes(th: TreeHash, record_hash_number: number, data: Uint8Array, r: HashReader) {
+  return stored_hashes_for_record_hash(th, record_hash_number, th.hash_leaf(data), r)
 }
 
 
@@ -238,13 +234,13 @@ export function subtree_hash(th: TreeHash, lo: number, hi: number, hashes: Uint8
 }
 
 
-export function tree_hash(th: TreeHash, n: number, r: HashReader) {
-  if (n === 0) {
+export function tree_hash(th: TreeHash, record_hash_number: number, r: HashReader) {
+  if (record_hash_number === 0) {
     return th.empty_root()
   }
-  const indexes = subtree_index(0, n, [])
+  const indexes = subtree_index(0, record_hash_number, [])
   let hashes = r.read_hashes(indexes)
-  const sth = subtree_hash(th, 0, n, hashes)
+  const sth = subtree_hash(th, 0, record_hash_number, hashes)
   const hash = sth[0]
   hashes = sth[1]
   if (hashes.length !== 0) {
@@ -253,9 +249,7 @@ export function tree_hash(th: TreeHash, n: number, r: HashReader) {
   return hash
 }
 
-export function tile_bytes_are_equal(tileData1: Uint8Array, tileData2: Uint8Array) {
-  return to_hex(tileData1) === to_hex(tileData2)
-}
+
 
 export function leaf_proof_index(lo: number, hi: number, record_hash_index: number, needed_storage_ids: number[]) {
   if (!(lo <= record_hash_index && record_hash_index < hi)) {
@@ -682,7 +676,7 @@ export class TileLog implements TileStorage, HashReader {
     this.update_tiles = config.update_tiles
   }
   record_hash(data: Uint8Array) {
-    return record_hash(this.th, data)
+    return this.th.hash_leaf(data)
   }
   inclusion_proof(tree_size: number, record_index: number): InclusionProof {
     return [tree_size, record_index, prove_record(this.th, tree_size, record_index, this)]

@@ -135,3 +135,8 @@ export function pretty_consistency_proof(root1: Uint8Array, size1: number, proof
     size2,
   }
 }
+
+
+export function tile_bytes_are_equal(data1: Uint8Array, data2: Uint8Array) {
+  return to_hex(data1) === to_hex(data2)
+}
