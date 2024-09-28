@@ -1,17 +1,17 @@
 
-import { TNode, Len64, Coverage, RangeSize, Sibling, Parent, RangeNodes, trailing_zeros_64, ones_count_64 } from "./Node"
+import { TreeNode, length_64, node_coverage, range_size, node_sibling, node_parent, range_nodes, trailing_zeros_64, ones_count_64 } from "./Node"
 import { TreeHash, to_hex } from "./Tile"
 
-export type Nodes = {
-  ids: TNode[],
+export type TreeNodes = {
+  ids: TreeNode[],
   begin: number,
   end: number,
-  ephem: TNode
+  ephem: TreeNode
 }
 
 export type HashChildren = (left: Uint8Array, right: Uint8Array) => Uint8Array
 
-function skip_first(nodes: Nodes) {
+function skip_first(nodes: TreeNodes) {
   nodes.ids = nodes.ids.slice(1, nodes.ids.length)
   if (nodes.begin < nodes.end) {
     nodes.begin--
@@ -20,23 +20,23 @@ function skip_first(nodes: Nodes) {
   return nodes
 }
 
-export function Nodes(index: number, level: number, size: number): Nodes {
-  const inner = Len64(index ^ (size >> level)) - 1
-  const fork = TNode(level + inner, index >> inner)
-  const [begin, end] = Coverage(fork)
-  const left = RangeSize(0, begin)
-  const right = RangeSize(end, size)
-  let node = TNode(level, index)
+export function create_nodes(index: number, level: number, size: number): TreeNodes {
+  const inner = length_64(index ^ (size >> level)) - 1
+  const fork = TreeNode(level + inner, index >> inner)
+  const [begin, end] = node_coverage(fork)
+  const left = range_size(0, begin)
+  const right = range_size(end, size)
+  let node = TreeNode(level, index)
   let nodes = [node]
   while (node[0] < fork[0]) {
-    nodes.push(Sibling(node))
-    node = Parent(node)
+    nodes.push(node_sibling(node))
+    node = node_parent(node)
   }
   let len1 = nodes.length
-  nodes = RangeNodes(end, size, nodes)
+  nodes = range_nodes(end, size, nodes)
   nodes = [...nodes.slice(0, nodes.length - right), ...nodes.slice(nodes.length - right, nodes.length).reverse()]
   let len2 = nodes.length
-  nodes = RangeNodes(0, begin, nodes)
+  nodes = range_nodes(0, begin, nodes)
   nodes = [...nodes.slice(0, nodes.length - left), ...nodes.slice(nodes.length - left, nodes.length).reverse()]
   if (len1 >= len2) {
     len1 = 0
@@ -46,13 +46,13 @@ export function Nodes(index: number, level: number, size: number): Nodes {
     ids: nodes,
     begin: len1,
     end: len2,
-    ephem: Sibling(fork)
+    ephem: node_sibling(fork)
   }
 }
 
 
 function inner_proof_size(index: number, size: number) {
-  return Len64(index ^ (size - 1))
+  return length_64(index ^ (size - 1))
 }
 
 
@@ -147,6 +147,7 @@ export function verify_consistency(th: TreeHash, size1: number, size2: number, p
     throw new Error(`empty proof`)
   }
 
+  // eslint-disable-next-line prefer-const
   let [inner, border] = decompose_inclusion_proof(size1 - 1, size2)
   const shift = trailing_zeros_64(size1)
   inner -= shift
@@ -177,15 +178,15 @@ export function verify_consistency(th: TreeHash, size1: number, size2: number, p
 }
 
 
-export function inclusion(index: number, size: number): Nodes {
+export function inclusion(index: number, size: number): TreeNodes {
   if (index >= size) {
     throw new Error(`Index ${index} out of bounds for tree size ${size}`)
   }
-  const nodes = Nodes(index, 0, size)
+  const nodes = create_nodes(index, 0, size)
   return skip_first(nodes)
 }
 
-export function consistency(size1: number, size2: number): Nodes {
+export function consistency(size1: number, size2: number): TreeNodes {
   if (size1 > size2) {
     throw new Error(`tree size ${size1} > ${size2}`)
   }
@@ -194,14 +195,14 @@ export function consistency(size1: number, size2: number): Nodes {
   }
   const level = trailing_zeros_64(size1)
   const index = (size1 - 1) >> level
-  const p = Nodes(index, level, size2)
+  const p = create_nodes(index, level, size2)
   if (index == 0) {
     return skip_first(p)
   }
   return p
 }
 
-export function rehash(nodes: Nodes, hashes: Uint8Array[], hash_children: HashChildren) {
+export function rehash(nodes: TreeNodes, hashes: Uint8Array[], hash_children: HashChildren) {
   if (hashes.length != nodes.ids.length) {
     throw new Error(`got ${hashes.length} hashes but expected ${nodes.ids.length}`)
   }

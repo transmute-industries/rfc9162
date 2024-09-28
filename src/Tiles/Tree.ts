@@ -1,5 +1,5 @@
 import { TreeHash, to_hex } from "./Tile";
-import { TNode, RangeNodes } from "./Node";
+import { TreeNode, range_nodes } from "./Node";
 import { inclusion, consistency, rehash } from "./Proof";
 
 export function pretty_proof(hashes: Uint8Array[]) {
@@ -85,7 +85,7 @@ export class Tree {
     return this.hashAt(this.size)
   }
 
-  getNodes(ids: TNode[]) {
+  getNodes(ids: TreeNode[]) {
     const hashes = new Array(ids.length)
     for (const i in ids) {
       const id = ids[i]
@@ -99,7 +99,7 @@ export class Tree {
     if (size === 0) {
       return this.th.empty_root()
     }
-    const hashes = this.getNodes(RangeNodes(0, size, []))
+    const hashes = this.getNodes(range_nodes(0, size, []))
     let hash = hashes[hashes.length - 1]
     let i = hashes.length - 2;
     while (i >= 0) {

@@ -19,7 +19,7 @@ export function trailing_zeros_64(n: number) {
   return count_trailing_0(n)
 }
 
-export function Len64(num: number) {
+export function length_64(num: number) {
   return num.toString(2).length;
 }
 
@@ -32,35 +32,35 @@ export function Decompose(begin: number, end: number) {
     return [0, end]
   }
   const xbegin = (begin >>> 0) - 1
-  const d = Len64(xbegin ^ end) - 1
+  const d = length_64(xbegin ^ end) - 1
   const mask = (1 << d) - 1
   return [(-1 ^ xbegin) & mask, end & mask]
 }
 
-export function RangeSize(begin: number, end: number) {
+export function range_size(begin: number, end: number) {
   const [left, right] = Decompose(begin, end)
   return ones_count_64(left) + ones_count_64(right)
 }
 
-export type TNode = [number, number]
+export type TreeNode = [number, number]
 
-export function TNode(level: number, index: number) {
-  return [level, index] as TNode
+export function TreeNode(level: number, index: number) {
+  return [level, index] as TreeNode
 }
 
-export function Parent([level, index]: TNode) {
-  return TNode(level + 1, index >> 1)
+export function node_parent([level, index]: TreeNode) {
+  return TreeNode(level + 1, index >> 1)
 }
 
-export function Sibling([level, index]: TNode) {
-  return TNode(level, index ^ 1)
+export function node_sibling([level, index]: TreeNode) {
+  return TreeNode(level, index ^ 1)
 }
 
-export function Coverage([level, index]: TNode) {
-  return TNode(index << level, (index + 1) << level)
+export function node_coverage([level, index]: TreeNode) {
+  return TreeNode(index << level, (index + 1) << level)
 }
 
-export function RangeNodes(begin: number, end: number, ids: TNode[]) {
+export function range_nodes(begin: number, end: number, ids: TreeNode[]) {
   let [left, right] = Decompose(begin, end)
   let pos = begin
   let bit = 0
@@ -73,7 +73,7 @@ export function RangeNodes(begin: number, end: number, ids: TNode[]) {
   }
   bit = 0
   while (right !== 0) {
-    const level = Len64(right) - 1
+    const level = length_64(right) - 1
     bit = 1 << level
     ids.push([level, pos >> level])
     pos = pos + bit
