@@ -1,9 +1,8 @@
-import api from '../src'
+
 
 import fs from 'fs'
-import { InclusionProofDataV2 } from '../src/RFC9162'
-
-const { treeHead } = api
+import { InclusionProofDataV2 } from '../../src/RFC9162'
+import { treeHead, leaf, verifyInclusionProof } from '../../src'
 
 describe('transparency dev examples', () => {
   it('matches go tests', async () => {
@@ -23,8 +22,8 @@ describe('transparency dev examples', () => {
   it('matches sbom tests', async () => {
     const receipt = JSON.parse(fs.readFileSync("./examples/transparency-dev/receipt.json").toString())
     const fileData = fs.readFileSync("./examples/transparency-dev/test-package/node_modules/jose/dist/browser/key/generate_secret.js")
-    const leafHash = await api.leaf(fileData)
-    const verified = await api.verifyInclusionProof(
+    const leafHash = await leaf(fileData)
+    const verified = await verifyInclusionProof(
       new Uint8Array(Buffer.from(receipt.root, 'base64')),
       leafHash,
       {

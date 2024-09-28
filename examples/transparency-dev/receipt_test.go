@@ -10,7 +10,6 @@ import (
 
 	"github.com/transparency-dev/merkle"
 	"github.com/transparency-dev/merkle/compact"
-	"github.com/transparency-dev/merkle/proof"
 	"github.com/transparency-dev/merkle/rfc6962"
 )
 
@@ -68,8 +67,8 @@ func (t *Tree) LeafHash(index uint64) []byte {
 	return t.hashes[0][index]
 }
 
-// Hash returns the current root hash of the tree.
-func (t *Tree) Hash() []byte {
+// TreeHash returns the current root hash of the tree.
+func (t *Tree) TreeHash() []byte {
 	return t.HashAt(t.size)
 }
 
@@ -92,21 +91,25 @@ func (t *Tree) HashAt(size uint64) []byte {
 // tree of the given size. Requires 0 <= index < size <= Size(), otherwise may
 // panic.
 func (t *Tree) InclusionProof(index, size uint64) ([][]byte, error) {
-	nodes, err := proof.Inclusion(index, size)
+	nodes, err := proof.inclusion(index, size)
+
+	// fmt.Println(nodes)
 	if err != nil {
 		return nil, err
 	}
-	return nodes.Rehash(t.getNodes(nodes.IDs), t.hasher.HashChildren)
+	return nodes.rehash(t.getNodes(nodes.IDs), t.hasher.HashChildren)
 }
 
 // ConsistencyProof returns the consistency proof between the two given tree
 // sizes. Requires 0 <= size1 <= size2 <= Size(), otherwise may panic.
 func (t *Tree) ConsistencyProof(size1, size2 uint64) ([][]byte, error) {
-	nodes, err := proof.Consistency(size1, size2)
+	nodes, err := proof.consistency(size1, size2)
+
 	if err != nil {
 		return nil, err
 	}
-	return nodes.Rehash(t.getNodes(nodes.IDs), t.hasher.HashChildren)
+	hashes := t.getNodes(nodes.IDs)
+	return nodes.rehash(hashes, t.hasher.HashChildren)
 }
 
 func (t *Tree) getNodes(ids []compact.NodeID) [][]byte {
@@ -125,11 +128,11 @@ func newTree(entries [][]byte) *Tree {
 
 func TestHashChildren(t *testing.T) {
 	th := rfc6962.DefaultHasher
-	emptyRoot := th.EmptyRoot()
+	empty_root := th.EmptyRoot()
 	emptyLeaf := th.HashLeaf([]byte{})
 	intermediateHash := th.HashChildren([]byte("N123"), []byte("N456")) // fake intermediaries
 	// echo -n | sha256sum
-	if hex.EncodeToString(emptyRoot) != "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" {
+	if hex.EncodeToString(empty_root) != "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" {
 		panic("RFC6962 Empty")
 	}
 	// echo -n 00 | xxd -r -p | sha256sum
@@ -152,7 +155,7 @@ func TestInclusion(t *testing.T) {
 	tree.appendImpl(th.HashLeaf([]byte("L123456")))
 	// echo -n 004C313233343536 | xxd -r -p | sha256sum
 	// 4C313233343536 -> L123456
-	if hex.EncodeToString(tree.Hash()) != "395aa064aa4c29f7010acfe3f25db9485bbd4b91897b6ad7ad547639252b4d56" {
+	if hex.EncodeToString(tree.TreeHash()) != "395aa064aa4c29f7010acfe3f25db9485bbd4b91897b6ad7ad547639252b4d56" {
 		t.Error("expected root to match leaf for tree of size 1")
 	}
 	tree.appendImpl(th.HashLeaf([]byte("L789")))
@@ -165,21 +168,24 @@ func TestInclusion(t *testing.T) {
 
 	// calculate root for 2 files in bash
 	// echo -n 01"$(printf "\x00" | cat -  ./f1.txt | sha256sum)$(printf "\x00" | cat -  ./f2.txt | sha256sum)" | xxd -r -p | sha256sum
-	if hex.EncodeToString(tree.Hash()) != "1798faa3eb85affab608a28cf885a24a13af4ec794fe3abec046f21b7a799bec" {
+	if hex.EncodeToString(tree.TreeHash()) != "1798faa3eb85affab608a28cf885a24a13af4ec794fe3abec046f21b7a799bec" {
 		t.Error("unexpected root for tree of size 2")
 	}
 	p1, _ := tree.InclusionProof(0, 2)
-	err := proof.VerifyInclusion(th, 0, 2, th.HashLeaf([]byte("L123456")), p1, tree.HashAt(2))
+	// fmt.Println(hex.EncodeToString(p1[0]))
+	// 12250d7a57ba6166c61b0b135fc2c21f096f918b69a42d673d812798d9c5d693
+	err := proof.verify_inclusion(th, 0, 2, th.HashLeaf([]byte("L123456")), p1, tree.HashAt(2))
 	if err != nil {
 		t.Error(err)
 	}
 	// add 3rd entry
 	tree.appendImpl(th.HashLeaf([]byte("L012")))
-	if hex.EncodeToString(tree.Hash()) != "3322c85256086aa0e1984dff85eab5f1e11d4b8fbbd6c4510611e3bbab0e132a" {
+	if hex.EncodeToString(tree.TreeHash()) != "3322c85256086aa0e1984dff85eab5f1e11d4b8fbbd6c4510611e3bbab0e132a" {
 		t.Error("unexpected root for tree of size 3")
 	}
 	p2, _ := tree.ConsistencyProof(2, 3)
-	err = proof.VerifyConsistency(tree.hasher, 2, 3, p2, tree.HashAt(2), tree.HashAt(3))
+	// fmt.Println(hex.EncodeToString(p2[0]))
+	err = proof.verify_consistency(tree.hasher, 2, 3, p2, tree.HashAt(2), tree.HashAt(3))
 	if err != nil {
 		t.Error(err)
 	}
@@ -233,10 +239,10 @@ func TestSbom(t *testing.T) {
 	if hex.EncodeToString(hash1) != "741fe362e81bc7db27210ac4caa91e7afec412fac206ecf735488cce475b1c78" {
 		t.Error("file hash has changed")
 	}
-	root1 := tree.Hash()
+	root1 := tree.TreeHash()
 	size1 := tree.Size()
 	proof1, _ := tree.InclusionProof(fileToCheckIndex, size1)
-	inclusionProofError := proof.VerifyInclusion(th, index1, size1, hash1, proof1, root1)
+	inclusionProofError := proof.verify_inclusion(th, index1, size1, hash1, proof1, root1)
 	if inclusionProofError != nil {
 		t.Error(inclusionProofError)
 	}

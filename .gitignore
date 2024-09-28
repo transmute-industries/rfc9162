@@ -6,3 +6,5 @@ dist
 
 
 !./examples/transparency-dev/test-package/node_modules
+
+*.db
