@@ -37,7 +37,7 @@ export type TileLogParameters = {
   hash_size: number
   hash_function: (bytes: Uint8Array) => Uint8Array
   read_tile: (tile: string) => Uint8Array
-  update_tiles: (storage_id: number, stored_hash: Uint8Array) => Uint8Array | null
+  update_tiles: (tile_path: string, start: number, end: number, stored_hash: Uint8Array) => Uint8Array | null
 }
 
 
@@ -741,7 +741,10 @@ export class TileLog implements TileStorage, HashReader {
       for (const stored_hash of hashes) {
         // some hashes here, are not meant to be stored at all!
         // needed_storage_ids to figure out if a hash belongs in a tile or not.
-        const tileData = this.update_tiles(storage_id, stored_hash)
+
+        const [tile, start, end] = tile_for_storage_id(this.tree_hasher.hash_size, this.tile_height, storage_id)
+        const tile_path = tile_to_path(tile)
+        const tileData = this.update_tiles(tile_path, start, end, stored_hash)
         if (tileData === null) {
           storage_id++
           continue

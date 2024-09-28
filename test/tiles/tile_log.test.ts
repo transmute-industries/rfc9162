@@ -1,6 +1,6 @@
 
 import { treeHead } from '../../src/RFC9162';
-import { Tree, TileLog, to_hex, tile_for_storage_id, stored_hash_index, new_tiles, concat } from "../../src";
+import { Tree, TileLog, to_hex, tile_for_storage_id, stored_hash_index, new_tiles } from "../../src";
 import { tile_params, encode, tree_hasher, pretty_hash } from './test_utils';
 
 it('tree sanity', async () => {
